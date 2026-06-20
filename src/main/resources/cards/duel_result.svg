@@ -1,0 +1,22 @@
+<svg width="680" height="440" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+  <rect x="0" y="0" width="680" height="440" rx="22" fill="#14182e"/>
+  <rect x="4" y="4" width="672" height="432" rx="19" fill="none" stroke="#2a3056" stroke-width="1.5"/>
+  <text x="36" y="54" fill="#13d6c0" font-size="22" font-weight="700" letter-spacing="5">{{BRAND}}</text>
+  <rect x="420" y="32" width="224" height="38" rx="19" fill="#1c2140" stroke="#2a3056" stroke-width="1"/>
+  <text x="532" y="57" fill="#aeb4d6" font-size="18" text-anchor="middle">{{CATEGORY}}</text>
+  <rect x="36" y="120" width="290" height="270" rx="16" fill="#1c2140"/>
+  <circle cx="181" cy="186" r="42" fill="#6c5ce7"/>
+  <text x="181" y="200" fill="#14182e" font-size="34" font-weight="700" text-anchor="middle">{{INITIALS_A}}</text>
+  <text x="181" y="270" fill="#ffffff" font-size="24" font-weight="700" text-anchor="middle">{{NAME_A}}</text>
+  <text x="181" y="338" fill="#ffffff" font-size="58" font-weight="800" text-anchor="middle">{{SCORE_A}}</text>
+  <text x="181" y="372" fill="{{RESULT_A_COLOR}}" font-size="20" font-weight="700" text-anchor="middle">{{RESULT_A}}</text>
+  <text x="340" y="262" fill="#5a608a" font-size="28" font-weight="700" text-anchor="middle">VS</text>
+  <rect x="354" y="120" width="290" height="270" rx="16" fill="#1c2140"/>
+  <circle cx="499" cy="186" r="42" fill="#6c5ce7"/>
+  <text x="499" y="200" fill="#14182e" font-size="34" font-weight="700" text-anchor="middle">{{INITIALS_B}}</text>
+  <text x="499" y="270" fill="#ffffff" font-size="24" font-weight="700" text-anchor="middle">{{NAME_B}}</text>
+  <text x="499" y="338" fill="#ffffff" font-size="58" font-weight="800" text-anchor="middle">{{SCORE_B}}</text>
+  <text x="499" y="372" fill="{{RESULT_B_COLOR}}" font-size="20" font-weight="700" text-anchor="middle">{{RESULT_B}}</text>
+  <text x="36" y="418" fill="#5a608a" font-size="17">{{BOT_HANDLE}}</text>
+  <text x="644" y="418" fill="#5a608a" font-size="17" text-anchor="end">{{LABEL_FOOTER}}</text>
+</svg>

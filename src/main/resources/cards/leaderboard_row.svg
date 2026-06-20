@@ -1,0 +1,4 @@
+  <rect x="36" y="{{RECT_Y}}" width="608" height="60" rx="12" fill="#1c2140"/>
+  <text x="68" y="{{TEXT_Y}}" fill="{{RANK_COLOR}}" font-size="24" font-weight="700" text-anchor="middle">{{RANK}}</text>
+  <text x="110" y="{{TEXT_Y}}" fill="#ffffff" font-size="22">{{NAME}}</text>
+  <text x="620" y="{{TEXT_Y}}" fill="{{SCORE_COLOR}}" font-size="24" font-weight="700" text-anchor="end">{{SCORE}}</text>

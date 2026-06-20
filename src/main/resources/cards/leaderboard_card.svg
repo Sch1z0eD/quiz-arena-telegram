@@ -1,0 +1,9 @@
+<svg width="680" height="{{HEIGHT}}" viewBox="0 0 680 {{HEIGHT}}" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+  <rect x="0" y="0" width="680" height="{{HEIGHT}}" rx="22" fill="#14182e"/>
+  <rect x="4" y="4" width="672" height="{{INNER_HEIGHT}}" rx="19" fill="none" stroke="#2a3056" stroke-width="1.5"/>
+  <text x="36" y="54" fill="#13d6c0" font-size="22" font-weight="700" letter-spacing="5">{{BRAND}}</text>
+  <text x="644" y="54" fill="#8b91b8" font-size="20" text-anchor="end">{{SCOPE}}</text>
+  <text x="36" y="98" fill="#ffffff" font-size="26" font-weight="700">{{LABEL_TITLE}}</text>
+{{ROWS}}
+  <text x="36" y="{{FOOTER_Y}}" fill="#5a608a" font-size="17">{{BOT_HANDLE}}</text>
+</svg>
