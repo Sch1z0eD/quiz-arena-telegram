@@ -14,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,7 +40,6 @@ class AdminQuestionSliceTest {
     void endpointsRequireAuthentication() throws Exception {
         mvc.perform(get("/api/admin/questions")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/admin/questions/1")).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/admin/categories")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -59,15 +57,6 @@ class AdminQuestionSliceTest {
     void detailReturns404WhenMissing() throws Exception {
         when(service.detail(anyLong())).thenReturn(Optional.empty());
         mvc.perform(get("/api/admin/questions/999").with(admin())).andExpect(status().isNotFound());
-    }
-
-    @Test
-    void categoriesReturnRowsWhenAuthenticated() throws Exception {
-        when(service.categories()).thenReturn(List.of(new CategoryRow("science", 5, Map.of("en", 5L))));
-        mvc.perform(get("/api/admin/categories").with(admin()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].slug").value("science"))
-                .andExpect(jsonPath("$[0].total").value(5));
     }
 
     private static RequestPostProcessor admin() {

@@ -8,12 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 @Service
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
@@ -39,19 +35,6 @@ public class AdminQuestionService {
 
     public Optional<QuestionDetail> detail(long id) {
         return questions.findById(id).map(this::toDetail);
-    }
-
-    public List<CategoryRow> categories() {
-        Map<String, Map<String, Long>> grouped = new LinkedHashMap<>();
-        for (QuestionRepository.CategoryLanguageCount row : questions.categoryCounts()) {
-            grouped.computeIfAbsent(row.getCategory(), key -> new TreeMap<>()).put(row.getLanguage(), row.getCount());
-        }
-        return grouped.entrySet().stream()
-                .map(entry -> new CategoryRow(entry.getKey(),
-                        entry.getValue().values().stream().mapToLong(Long::longValue).sum(),
-                        entry.getValue()))
-                .sorted(Comparator.comparing(CategoryRow::slug))
-                .toList();
     }
 
     private QuestionDetail toDetail(Question q) {

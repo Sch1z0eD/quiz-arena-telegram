@@ -45,11 +45,6 @@ public class AdminQuestionController {
         return service.detail(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    @GetMapping("/categories")
-    public List<CategoryRow> categories() {
-        return service.categories();
-    }
-
     // Cap the page size and restrict sorting to known columns so request params cannot drive arbitrary queries.
     private static Pageable sanitize(Pageable pageable) {
         int size = Math.min(Math.max(pageable.getPageSize(), 1), MAX_PAGE_SIZE);

@@ -69,43 +69,10 @@ class AdminQuestionServiceTest {
         assertEquals("science", response.content().get(0).category());
     }
 
-    @Test
-    void categoriesGroupByLanguageAndSumTotals() {
-        when(questions.categoryCounts()).thenReturn(List.of(
-                count("science", "en", 5), count("science", "ru", 3), count("history", "en", 2)));
-
-        List<CategoryRow> rows = service.categories();
-
-        assertEquals(2, rows.size());
-        assertEquals("history", rows.get(0).slug());
-        assertEquals("science", rows.get(1).slug());
-        assertEquals(8, rows.get(1).total());
-        assertEquals(5L, rows.get(1).byLanguage().get("en"));
-        assertEquals(3L, rows.get(1).byLanguage().get("ru"));
-    }
-
     private static Question question(long id) {
         Question q = new Question("Q text", "A", "B", "C", "D", 1, "science", "easy", "en", "h" + id);
         ReflectionTestUtils.setField(q, "id", id);
         return q;
     }
 
-    private static QuestionRepository.CategoryLanguageCount count(String category, String language, long n) {
-        return new QuestionRepository.CategoryLanguageCount() {
-            @Override
-            public String getCategory() {
-                return category;
-            }
-
-            @Override
-            public String getLanguage() {
-                return language;
-            }
-
-            @Override
-            public long getCount() {
-                return n;
-            }
-        };
-    }
 }

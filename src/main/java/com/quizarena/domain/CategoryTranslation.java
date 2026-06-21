@@ -32,6 +32,16 @@ public class CategoryTranslation {
     protected CategoryTranslation() {
     }
 
+    public CategoryTranslation(CategoryEntity category, String language, String name) {
+        this.category = category;
+        this.language = language;
+        this.name = name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getLanguage() {
         return language;
     }

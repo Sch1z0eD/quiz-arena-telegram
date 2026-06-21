@@ -1,5 +1,6 @@
 package com.quizarena.domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,10 +24,18 @@ public class CategoryEntity {
     @Column(nullable = false, unique = true, length = 64)
     private String slug;
 
-    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CategoryTranslation> translations = new ArrayList<>();
 
     protected CategoryEntity() {
+    }
+
+    public CategoryEntity(String slug) {
+        this.slug = slug;
+    }
+
+    public void addTranslation(CategoryTranslation translation) {
+        translations.add(translation);
     }
 
     public Long getId() {

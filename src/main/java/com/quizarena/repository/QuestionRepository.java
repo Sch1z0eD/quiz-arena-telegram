@@ -34,6 +34,8 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     boolean existsByQuestionHash(String questionHash);
 
+    long countByCategory(String category);
+
     @Query(value = """
             SELECT category FROM questions
             WHERE language = :language AND category IS NOT NULL

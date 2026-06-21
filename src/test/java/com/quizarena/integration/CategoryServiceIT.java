@@ -1,6 +1,9 @@
 package com.quizarena.integration;
 
 import com.quizarena.domain.Category;
+import com.quizarena.domain.CategoryEntity;
+import com.quizarena.domain.CategoryTranslation;
+import com.quizarena.repository.CategoryRepository;
 import com.quizarena.service.CategoryService;
 import com.quizarena.service.GameService;
 import org.junit.jupiter.api.Test;
@@ -12,6 +15,7 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CategoryServiceIT extends AbstractIntegrationTest {
 
@@ -22,6 +26,8 @@ class CategoryServiceIT extends AbstractIntegrationTest {
     private CategoryService categoryService;
     @Autowired
     private GameService gameService;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Test
     void seedsCurrentCategoryNames() {
@@ -46,5 +52,19 @@ class CategoryServiceIT extends AbstractIntegrationTest {
             assertNotEquals(category.slug(), categoryService.name(category.slug(), RU),
                     "every picker category must resolve to a real DB name, not the slug fallback");
         }
+    }
+
+    @Test
+    void persistsCategoryWithTranslationsAndCascadesOnDelete() {
+        CategoryEntity category = new CategoryEntity("ittestcat");
+        category.addTranslation(new CategoryTranslation(category, "ru", "ИТ-тест"));
+        category.addTranslation(new CategoryTranslation(category, "en", "IT test"));
+        categoryRepository.save(category);
+
+        CategoryEntity loaded = categoryRepository.findBySlug("ittestcat").orElseThrow();
+        assertEquals(2, loaded.getTranslations().size());
+
+        categoryRepository.delete(loaded);
+        assertTrue(categoryRepository.findBySlug("ittestcat").isEmpty());
     }
 }
