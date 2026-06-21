@@ -36,7 +36,8 @@ class LocalizationMessagesTest {
                 "btn.play", "btn.language", "category.science", "difficulty.easy",
                 "scope.GROUP", "card.score", "card.duelFinished", "lang.ru",
                 "inline.duel.title", "inline.duel.message", "inline.duel.button",
-                "inline.play.title", "inline.play.message", "duel.opponentUnavailable"}) {
+                "inline.play.title", "inline.play.message", "duel.opponentUnavailable",
+                "card.matchupFound", "difficulty.any"}) {
             assertFalse(localizer.get(RU, key).isBlank(), "missing RU: " + key);
             assertFalse(localizer.get(EN, key).isBlank(), "missing EN: " + key);
         }

@@ -1,9 +1,11 @@
 package com.quizarena.bot;
 
 import com.quizarena.domain.DuelResult;
+import com.quizarena.domain.Matchup;
 import com.quizarena.domain.Question;
 import com.quizarena.handler.MessageBuilder;
 import com.quizarena.handler.UiTexts;
+import com.quizarena.render.DuelMatchupCardRenderer;
 import com.quizarena.render.DuelResultCardRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +14,10 @@ import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageCaption;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -34,13 +38,16 @@ public class DuelMessenger {
     private final MessageBuilder messageBuilder;
     private final UiTexts texts;
     private final DuelResultCardRenderer duelResultCardRenderer;
+    private final DuelMatchupCardRenderer duelMatchupCardRenderer;
 
     public DuelMessenger(TelegramClient telegramClient, MessageBuilder messageBuilder, UiTexts texts,
-                         DuelResultCardRenderer duelResultCardRenderer) {
+                         DuelResultCardRenderer duelResultCardRenderer,
+                         DuelMatchupCardRenderer duelMatchupCardRenderer) {
         this.telegramClient = telegramClient;
         this.messageBuilder = messageBuilder;
         this.texts = texts;
         this.duelResultCardRenderer = duelResultCardRenderer;
+        this.duelMatchupCardRenderer = duelMatchupCardRenderer;
     }
 
     public void editSearching(long chatId, int messageId, String bucketCategory, String bucketDifficulty,
@@ -67,6 +74,33 @@ public class DuelMessenger {
 
     public void editCancelled(long chatId, int messageId, Locale locale) {
         editStatus(chatId, messageId, texts.duelSearchCancelled(locale), noKeyboard());
+    }
+
+    // Matchup card is cosmetic: on any render/send failure fall back to the plain "opponent found" text
+    // so the duel is never blocked by the card. Random path edits the existing search banner's media;
+    // the invite path has no banner, so it sends a fresh photo.
+    public void editMatchup(long chatId, int messageId, Matchup matchup, Locale locale) {
+        try {
+            byte[] png = duelMatchupCardRenderer.render(matchup, locale);
+            InputMediaPhoto media = InputMediaPhoto.builder()
+                    .media(new ByteArrayInputStream(png), "matchup.png").build();
+            telegramClient.execute(EditMessageMedia.builder()
+                    .chatId(chatId).messageId(messageId).media(media).replyMarkup(noKeyboard()).build());
+        } catch (Exception e) {
+            log.warn("Matchup card (edit) failed in chat {}, falling back to text", chatId, e);
+            editFound(chatId, messageId, locale);
+        }
+    }
+
+    public void sendMatchup(long chatId, Matchup matchup, Locale locale) {
+        try {
+            byte[] png = duelMatchupCardRenderer.render(matchup, locale);
+            telegramClient.execute(SendPhoto.builder().chatId(chatId)
+                    .photo(new InputFile(new ByteArrayInputStream(png), "matchup.png")).build());
+        } catch (Exception e) {
+            log.warn("Matchup card (send) failed in chat {}, falling back to text", chatId, e);
+            notify(chatId, texts.duelSearchFound(locale));
+        }
     }
 
     public int sendQuestion(long chatId, Question question, int index, int total, long duelId, long token,

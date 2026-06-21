@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -116,6 +117,23 @@ public class SvgCardRenderer {
             i += Character.charCount(cp);
         }
         return -1;
+    }
+
+    // Avatar slot for a circular cx/cy/r position with a matching clipPath in the template's defs:
+    // a clipped <image> with the photo as a base64 data URI, or the existing initials circle when null.
+    // Initials go through the same XML-escape as all other text (the fragment is inserted raw, past fill()).
+    public String avatarSlot(byte[] avatarPng, String initials, int cx, int cy, int r, String clipId) {
+        if (avatarPng != null) {
+            String dataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(avatarPng);
+            return "<image x=\"" + (cx - r) + "\" y=\"" + (cy - r) + "\" width=\"" + (2 * r)
+                    + "\" height=\"" + (2 * r) + "\" preserveAspectRatio=\"xMidYMid slice\" clip-path=\"url(#"
+                    + clipId + ")\" xlink:href=\"" + dataUri + "\"/>";
+        }
+        int fontSize = Math.round(r * 0.8f);
+        int textY = cy + Math.round(r / 3.0f);
+        return "<circle cx=\"" + cx + "\" cy=\"" + cy + "\" r=\"" + r + "\" fill=\"#6c5ce7\"/>"
+                + "<text x=\"" + cx + "\" y=\"" + textY + "\" fill=\"#14182e\" font-size=\"" + fontSize
+                + "\" font-weight=\"700\" text-anchor=\"middle\">" + xmlEscape(initials) + "</text>";
     }
 
     public String xmlEscape(String value) {

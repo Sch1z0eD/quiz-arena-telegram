@@ -1,0 +1,24 @@
+<svg width="680" height="440" viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="DejaVu Sans, sans-serif">
+  <defs>
+    <clipPath id="avA"><circle cx="181" cy="186" r="42"/></clipPath>
+    <clipPath id="avB"><circle cx="499" cy="186" r="42"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="680" height="440" rx="22" fill="#14182e"/>
+  <rect x="4" y="4" width="672" height="432" rx="19" fill="none" stroke="#2a3056" stroke-width="1.5"/>
+  <text x="36" y="54" fill="#13d6c0" font-size="22" font-weight="700" letter-spacing="5">{{BRAND}}</text>
+  <rect x="420" y="32" width="224" height="36" rx="18" fill="#1c2140" stroke="#2a3056" stroke-width="1"/>
+  <text x="532" y="56" fill="#aeb4d6" font-size="17" text-anchor="middle">{{CATEGORY}}</text>
+  <rect x="420" y="76" width="224" height="32" rx="16" fill="#1c2140" stroke="#2a3056" stroke-width="1"/>
+  <text x="532" y="98" fill="#8b91b8" font-size="15" text-anchor="middle">{{DIFFICULTY}}</text>
+  <rect x="36" y="120" width="290" height="250" rx="16" fill="#1c2140"/>
+  {{AVATAR_A}}
+  <text x="181" y="278" fill="#ffffff" font-size="24" font-weight="700" text-anchor="middle">{{NAME_A}}</text>
+  <text x="181" y="332" fill="#aeb4d6" font-size="26" font-weight="700" text-anchor="middle">ELO {{ELO_A}}</text>
+  <text x="340" y="256" fill="#5a608a" font-size="28" font-weight="700" text-anchor="middle">VS</text>
+  <rect x="354" y="120" width="290" height="250" rx="16" fill="#1c2140"/>
+  {{AVATAR_B}}
+  <text x="499" y="278" fill="#ffffff" font-size="24" font-weight="700" text-anchor="middle">{{NAME_B}}</text>
+  <text x="499" y="332" fill="#aeb4d6" font-size="26" font-weight="700" text-anchor="middle">ELO {{ELO_B}}</text>
+  <text x="36" y="418" fill="#5a608a" font-size="17">{{BOT_HANDLE}}</text>
+  <text x="644" y="418" fill="#5a608a" font-size="17" text-anchor="end">{{LABEL_FOOTER}}</text>
+</svg>

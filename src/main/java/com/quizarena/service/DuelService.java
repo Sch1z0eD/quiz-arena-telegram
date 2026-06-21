@@ -7,6 +7,7 @@ import com.quizarena.domain.AnswerRecord;
 import com.quizarena.domain.DuelInvite;
 import com.quizarena.domain.DuelRecord;
 import com.quizarena.domain.DuelResult;
+import com.quizarena.domain.Matchup;
 import com.quizarena.domain.GameMode;
 import com.quizarena.domain.Question;
 import com.quizarena.domain.RecordResult;
@@ -47,6 +48,7 @@ public class DuelService {
     private final DuelProperties properties;
     private final LocaleService localeService;
     private final EloService eloService;
+    private final AvatarService avatarService;
     private final InviteStore inviteStore;
     private final BotIdentity botIdentity;
     private final Localizer localizer;
@@ -57,7 +59,7 @@ public class DuelService {
     public DuelService(DuelStore store, DuelMessenger messenger, GameStore gameStore,
                        QuestionRepository questionRepository, AnswerRepository answerRepository,
                        DuelRepository duelRepository, TaskScheduler scheduler, DuelProperties properties,
-                       LocaleService localeService, EloService eloService,
+                       LocaleService localeService, EloService eloService, AvatarService avatarService,
                        InviteStore inviteStore, BotIdentity botIdentity, Localizer localizer) {
         this.store = store;
         this.messenger = messenger;
@@ -69,6 +71,7 @@ public class DuelService {
         this.properties = properties;
         this.localeService = localeService;
         this.eloService = eloService;
+        this.avatarService = avatarService;
         this.inviteStore = inviteStore;
         this.botIdentity = botIdentity;
         this.localizer = localizer;
@@ -217,8 +220,9 @@ public class DuelService {
         long duelId = store.nextId();
         store.createDuel(duelId, category, difficulty, userA, chatA, nameA, localeA.getLanguage(),
                 userB, chatB, nameB, localeB.getLanguage(), questionIds);
-        messenger.editFound(chatA, messageA, localeA);
-        messenger.editFound(chatB, messageB, localeB);
+        Matchup matchup = matchup(userA, nameA, userB, nameB, category, difficulty);
+        messenger.editMatchup(chatA, messageA, matchup, localeA);
+        messenger.editMatchup(chatB, messageB, matchup, localeB);
         beginQuestion(duelId, 0);
     }
 
@@ -240,8 +244,10 @@ public class DuelService {
         store.createDuel(duelId, invite.category(), invite.difficulty(),
                 invite.inviterUserId(), invite.inviterChatId(), invite.inviterName(), inviterLocale.getLanguage(),
                 friendUser, friendChat, friendName, friendLocale.getLanguage(), questionIds);
-        messenger.notify(invite.inviterChatId(), localizer.get(inviterLocale, "duel.searchFound"));
-        messenger.notify(friendChat, localizer.get(friendLocale, "duel.searchFound"));
+        Matchup matchup = matchup(invite.inviterUserId(), invite.inviterName(),
+                friendUser, friendName, invite.category(), invite.difficulty());
+        messenger.sendMatchup(invite.inviterChatId(), matchup, inviterLocale);
+        messenger.sendMatchup(friendChat, matchup, friendLocale);
         try {
             beginQuestion(duelId, 0);
         } catch (TelegramApiException e) {
@@ -296,10 +302,11 @@ public class DuelService {
             duelRepository.save(new DuelRecord(duelId, snapshot.userA(), snapshot.userB(),
                     (int) scoreA, (int) scoreB, winnerId, snapshot.category(), snapshot.difficulty(),
                     System.currentTimeMillis()));
+            DuelResult duelResult = new DuelResult(snapshot.category(), snapshot.nameA(), scoreA,
+                    snapshot.nameB(), scoreB, outcome, elo.newA(), elo.deltaA(), elo.newB(), elo.deltaB(),
+                    avatarService.get(snapshot.userA()), avatarService.get(snapshot.userB()));
             messenger.sendResult(snapshot.chatA(), localeService.parse(snapshot.localeA()),
-                    snapshot.chatB(), localeService.parse(snapshot.localeB()),
-                    new DuelResult(snapshot.category(), snapshot.nameA(), scoreA, snapshot.nameB(), scoreB, outcome,
-                            elo.newA(), elo.deltaA(), elo.newB(), elo.deltaB()));
+                    snapshot.chatB(), localeService.parse(snapshot.localeB()), duelResult);
         } catch (Exception e) {
             log.error("Duel end failed for {}", duelId, e);
         } finally {
@@ -347,6 +354,11 @@ public class DuelService {
         if (future != null) {
             future.cancel(false);
         }
+    }
+
+    private Matchup matchup(long userA, String nameA, long userB, String nameB, String category, String difficulty) {
+        return new Matchup(nameA, eloService.rating(userA), avatarService.get(userA),
+                nameB, eloService.rating(userB), avatarService.get(userB), category, difficulty);
     }
 
     private static String bucket(String filter) {

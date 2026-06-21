@@ -45,12 +45,13 @@ class DuelServiceTest {
     private final DuelProperties properties = new DuelProperties(45, 20, 1, 100);
     private final LocaleService localeService = mock(LocaleService.class);
     private final EloService eloService = mock(EloService.class);
+    private final AvatarService avatarService = mock(AvatarService.class);
     private final InviteStore inviteStore = mock(InviteStore.class);
     private final BotIdentity botIdentity = mock(BotIdentity.class);
     private final Localizer localizer = mock(Localizer.class);
 
     private final DuelService service = new DuelService(store, messenger, gameStore, questions, answers, duels,
-            scheduler, properties, localeService, eloService, inviteStore, botIdentity, localizer);
+            scheduler, properties, localeService, eloService, avatarService, inviteStore, botIdentity, localizer);
 
     @Test
     void createInlineInviteUsesCallerAsBothUserAndChatWithAnyFilters() throws Exception {

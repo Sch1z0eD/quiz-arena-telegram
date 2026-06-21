@@ -26,20 +26,23 @@ public class DuelResultCardRenderer {
     public byte[] render(DuelResult result, Locale locale) {
         boolean aWins = result.outcome() == DuelResult.Outcome.A_WINS;
         boolean bWins = result.outcome() == DuelResult.Outcome.B_WINS;
+        String template = svg.loadTemplate("duel_result.svg");
+        template = template.replace("{{AVATAR_A}}",
+                svg.avatarSlot(result.avatarA(), svg.initials(result.nameA()), 181, 186, 42, "avA"));
+        template = template.replace("{{AVATAR_B}}",
+                svg.avatarSlot(result.avatarB(), svg.initials(result.nameB()), 499, 186, 42, "avB"));
         Map<String, String> values = Map.ofEntries(
                 Map.entry("CATEGORY", categoryLabel(result.categorySlug(), locale)),
-                Map.entry("INITIALS_A", svg.initials(result.nameA())),
                 Map.entry("NAME_A", svg.truncateToWidth(result.nameA(), NAME_FONT, NAME_MAX_WIDTH)),
                 Map.entry("SCORE_A", Long.toString(result.scoreA())),
                 Map.entry("RESULT_A", label(result.outcome(), true, locale)),
                 Map.entry("RESULT_A_COLOR", aWins ? WINNER_COLOR : OTHER_COLOR),
-                Map.entry("INITIALS_B", svg.initials(result.nameB())),
                 Map.entry("NAME_B", svg.truncateToWidth(result.nameB(), NAME_FONT, NAME_MAX_WIDTH)),
                 Map.entry("SCORE_B", Long.toString(result.scoreB())),
                 Map.entry("RESULT_B", label(result.outcome(), false, locale)),
                 Map.entry("RESULT_B_COLOR", bWins ? WINNER_COLOR : OTHER_COLOR),
                 Map.entry("LABEL_FOOTER", localizer.get(locale, "card.duelFinished")));
-        return svg.rasterize(svg.fill(svg.loadTemplate("duel_result.svg"), values));
+        return svg.rasterize(svg.fill(template, values));
     }
 
     private String label(DuelResult.Outcome outcome, boolean playerA, Locale locale) {

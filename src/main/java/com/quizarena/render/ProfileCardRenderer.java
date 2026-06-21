@@ -18,9 +18,10 @@ public class ProfileCardRenderer {
         this.localizer = localizer;
     }
 
-    public byte[] render(Profile profile, String name, Locale locale) {
+    public byte[] render(Profile profile, String name, byte[] avatar, Locale locale) {
+        String template = svg.loadTemplate("profile_card.svg")
+                .replace("{{AVATAR}}", svg.avatarSlot(avatar, svg.initials(name), 78, 150, 40, "prof"));
         Map<String, String> values = Map.ofEntries(
-                Map.entry("INITIALS", svg.initials(name)),
                 Map.entry("NAME", name),
                 Map.entry("RANKLINE", profile.place() == null
                         ? localizer.get(locale, "card.ranklineNew")
@@ -36,6 +37,6 @@ public class ProfileCardRenderer {
                 Map.entry("LABEL_POINTS", localizer.get(locale, "card.totalPoints")),
                 Map.entry("LABEL_ACCURACY", localizer.get(locale, "card.accuracy")),
                 Map.entry("LABEL_RANK", localizer.get(locale, "card.rankPlace")));
-        return svg.rasterize(svg.fill(svg.loadTemplate("profile_card.svg"), values));
+        return svg.rasterize(svg.fill(template, values));
     }
 }

@@ -18,14 +18,16 @@ public class MenuService {
     private final UiTexts texts;
     private final DuelService duelService;
     private final LocaleService localeService;
+    private final AvatarService avatarService;
 
     public MenuService(GameService gameService, MenuMessenger menuMessenger, UiTexts texts, DuelService duelService,
-                       LocaleService localeService) {
+                       LocaleService localeService, AvatarService avatarService) {
         this.gameService = gameService;
         this.menuMessenger = menuMessenger;
         this.texts = texts;
         this.duelService = duelService;
         this.localeService = localeService;
+        this.avatarService = avatarService;
     }
 
     public void openMenu(long chatId, boolean privateChat, Locale locale) throws TelegramApiException {
@@ -68,7 +70,8 @@ public class MenuService {
             }
             case "profile" -> {
                 menuMessenger.deleteMessage(chatId, messageId);
-                menuMessenger.sendProfileCard(chatId, gameService.profile(chatId, userId), name, locale);
+                menuMessenger.sendProfileCard(chatId, gameService.profile(chatId, userId), name,
+                        avatarService.get(userId), locale);
             }
             case "board" -> {
                 menuMessenger.deleteMessage(chatId, messageId);

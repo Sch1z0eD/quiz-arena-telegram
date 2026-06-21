@@ -139,11 +139,11 @@ public class MenuMessenger {
         editBanner(chatId, messageId, WELCOME, texts.languageTitle(locale), languageMarkup(locale), locale);
     }
 
-    public void sendProfileCard(long chatId, Profile profile, String name, Locale locale) {
+    public void sendProfileCard(long chatId, Profile profile, String name, byte[] avatar, Locale locale) {
         Thread.ofVirtual().name("profile-card").start(() -> {
             try {
                 telegramClient.execute(SendPhoto.builder().chatId(chatId)
-                        .photo(photo(profileCardRenderer.render(profile, name, locale)))
+                        .photo(photo(profileCardRenderer.render(profile, name, avatar, locale)))
                         .caption(messageBuilder.eloCaption(locale, profile.elo())).parseMode("HTML")
                         .replyMarkup(backToMenuMarkup(locale)).build());
             } catch (Exception e) {

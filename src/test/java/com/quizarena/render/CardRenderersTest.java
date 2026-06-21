@@ -14,6 +14,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,9 +45,9 @@ class CardRenderersTest {
     }
 
     @Test
-    void rendersProfileCard() {
+    void rendersProfileCard() throws Exception {
         byte[] png = new ProfileCardRenderer(svg, localizer)
-                .render(new Profile(42, 200, 150, 75, 1234, 7L, 1024), "Анна", RU);
+                .render(new Profile(42, 200, 150, 75, 1234, 7L, 1024), "Анна", samplePng(), RU);
         assertPng(png);
     }
 
@@ -64,7 +65,7 @@ class CardRenderersTest {
     void rendersDuelCardWithLongNameTruncated() {
         DuelResult result = new DuelResult("science",
                 "Александр Длинноеимякотороеточноневлезетвпанель", 320,
-                "Боб", 150, DuelResult.Outcome.A_WINS, 1012, 12, 988, -12);
+                "Боб", 150, DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, null, null);
         byte[] png = new DuelResultCardRenderer(svg, localizer).render(result, RU);
         assertPng(png);
     }
@@ -103,6 +104,21 @@ class CardRenderersTest {
         source.setBasename("messages");
         source.setDefaultEncoding("UTF-8");
         return source;
+    }
+
+    @Test
+    void rendersDuelCardWithAvatars() throws Exception {
+        byte[] avatar = samplePng();
+        DuelResult result = new DuelResult("science", "Иван", 320, "Боб", 150,
+                DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, avatar, avatar);
+        assertPng(new DuelResultCardRenderer(svg, localizer).render(result, RU));
+    }
+
+    private static byte[] samplePng() throws Exception {
+        BufferedImage img = new BufferedImage(96, 96, BufferedImage.TYPE_INT_ARGB);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", out);
+        return out.toByteArray();
     }
 
     private static void assertPng(byte[] png) {
