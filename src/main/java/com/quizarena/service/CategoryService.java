@@ -18,7 +18,7 @@ import java.util.Map;
 public class CategoryService {
 
     private final CategoryRepository repository;
-    private volatile Map<String, Map<String, String>> namesBySlug = Map.of();
+    private volatile Map<String, Cached> bySlug = Map.of();
 
     public CategoryService(CategoryRepository repository) {
         this.repository = repository;
@@ -26,26 +26,30 @@ public class CategoryService {
 
     @PostConstruct
     public void refresh() {
-        Map<String, Map<String, String>> next = new HashMap<>();
+        Map<String, Cached> next = new HashMap<>();
         for (CategoryEntity category : repository.findAllWithTranslations()) {
             Map<String, String> byLanguage = new HashMap<>();
             for (CategoryTranslation translation : category.getTranslations()) {
                 byLanguage.put(translation.getLanguage(), translation.getName());
             }
-            next.put(category.getSlug(), byLanguage);
+            next.put(category.getSlug(), new Cached(category.isActive(), byLanguage));
         }
-        namesBySlug = Map.copyOf(next);
+        bySlug = Map.copyOf(next);
     }
 
     public String name(String slug, Locale locale) {
-        Map<String, String> byLanguage = namesBySlug.get(slug);
-        if (byLanguage == null) {
+        Cached cached = bySlug.get(slug);
+        if (cached == null) {
             return slug;
         }
-        return byLanguage.getOrDefault(locale.getLanguage(), slug);
+        return cached.names().getOrDefault(locale.getLanguage(), slug);
     }
 
-    public boolean exists(String slug) {
-        return namesBySlug.containsKey(slug);
+    public boolean isEnabled(String slug) {
+        Cached cached = bySlug.get(slug);
+        return cached != null && cached.active();
+    }
+
+    private record Cached(boolean active, Map<String, String> names) {
     }
 }

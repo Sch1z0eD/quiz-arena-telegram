@@ -135,12 +135,18 @@ public class MenuService {
             case "dsearch" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
                 String difficulty = parts.length > 3 ? parts[3] : "any";
+                if (categoryBlocked(slug)) {
+                    return texts.notEnoughQuestions(locale);
+                }
                 duelService.search(chatId, userId, name,
                         "any".equals(slug) ? "" : slug, "any".equals(difficulty) ? "" : difficulty, messageId, locale);
             }
             case "dinvite" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
                 String difficulty = parts.length > 3 ? parts[3] : "any";
+                if (categoryBlocked(slug)) {
+                    return texts.notEnoughQuestions(locale);
+                }
                 Optional<DuelService.Invitation> invitation =
                         duelService.createInvite(userId, chatId, name, slug, difficulty, locale);
                 if (invitation.isPresent()) {
@@ -166,7 +172,7 @@ public class MenuService {
                              String name, Locale locale) throws TelegramApiException {
         String category = "any".equals(slug) ? "" : slug;
         String difficulty = "any".equals(difficultyToken) ? "" : difficultyToken;
-        if (!gameService.hasEnoughQuestions(category, difficulty, locale.getLanguage())) {
+        if (categoryBlocked(slug) || !gameService.hasEnoughQuestions(category, difficulty, locale.getLanguage())) {
             GameService.DifficultyOptions options = difficultyOptions(slug, locale);
             menuMessenger.editDifficulties(chatId, messageId, slug, categoryLabel(slug, locale),
                     options.difficulties(), options.anyAvailable(), locale);
@@ -191,6 +197,10 @@ public class MenuService {
     private GameService.DifficultyOptions difficultyOptions(String slug, Locale locale) {
         String category = "any".equals(slug) ? "" : slug;
         return gameService.availableDifficulties(category, locale.getLanguage());
+    }
+
+    private boolean categoryBlocked(String slug) {
+        return !"any".equals(slug) && !categoryService.isEnabled(slug);
     }
 
     private List<String> orderedCategories(Locale locale) {

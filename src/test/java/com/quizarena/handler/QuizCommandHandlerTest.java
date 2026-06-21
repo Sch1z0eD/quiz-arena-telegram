@@ -47,7 +47,7 @@ class QuizCommandHandlerTest {
     @Test
     void quizStartsKnownDbCategory() throws Exception {
         when(localeService.resolve(7L, "ru")).thenReturn(RU);
-        when(categoryService.exists("russian-films-2026")).thenReturn(true);
+        when(categoryService.isEnabled("russian-films-2026")).thenReturn(true);
 
         handler.handle(message("/quiz russian-films-2026 easy", 42L, 7L, "ru"));
 
@@ -56,9 +56,9 @@ class QuizCommandHandlerTest {
     }
 
     @Test
-    void quizIgnoresUnknownCategoryAndOpensPicker() throws Exception {
+    void quizIgnoresUnknownOrDisabledCategoryAndOpensPicker() throws Exception {
         when(localeService.resolve(7L, "ru")).thenReturn(RU);
-        when(categoryService.exists("bogus")).thenReturn(false);
+        when(categoryService.isEnabled("bogus")).thenReturn(false);
 
         handler.handle(message("/quiz bogus", 42L, 7L, "ru"));
 

@@ -35,13 +35,19 @@ public class AdminCategoryController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryRow create(@AuthenticationPrincipal VerifiedAdmin admin, @RequestBody CreateCategoryRequest request) {
-        return service.create(admin, request.names());
+        return service.create(admin, request.names(), request.active());
     }
 
     @PutMapping("/{slug}")
     public CategoryRow update(@AuthenticationPrincipal VerifiedAdmin admin, @PathVariable String slug,
                               @RequestBody UpdateCategoryRequest request) {
         return service.update(admin, slug, request.names());
+    }
+
+    @PutMapping("/{slug}/active")
+    public CategoryRow setActive(@AuthenticationPrincipal VerifiedAdmin admin, @PathVariable String slug,
+                                 @RequestBody ActiveRequest request) {
+        return service.setActive(admin, slug, request.active());
     }
 
     @DeleteMapping("/{slug}")

@@ -27,6 +27,9 @@ public class CategoryEntity {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CategoryTranslation> translations = new ArrayList<>();
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected CategoryEntity() {
     }
 
@@ -48,5 +51,13 @@ public class CategoryEntity {
 
     public List<CategoryTranslation> getTranslations() {
         return translations;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

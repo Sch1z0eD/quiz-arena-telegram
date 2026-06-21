@@ -34,10 +34,8 @@ class CategoryPickerIT extends AbstractIntegrationTest {
     @Test
     void newDbCategoryBecomesPickableWithEnoughActiveQuestions() {
         int min = properties.questionsPerGame();
-        CategoryEntity category = new CategoryEntity("russian-films-2026");
-        category.addTranslation(new CategoryTranslation(category, "ru", "Русские фильмы 2026"));
-        category.addTranslation(new CategoryTranslation(category, "en", "Russian films 2026"));
-        categories.save(category);
+        saveCategory("russian-films-2026", "Русские фильмы 2026", "Russian films 2026", true);
+        saveCategory("sparse-films", "Мало фильмов", "Sparse films", true);
         categoryService.refresh();
 
         for (int i = 0; i < min; i++) {
@@ -58,10 +56,36 @@ class CategoryPickerIT extends AbstractIntegrationTest {
     @Test
     void inactiveQuestionsDoNotMakeCategoryPickable() {
         int min = properties.questionsPerGame();
+        saveCategory("hidden-films", "Скрытые вопросы", "Hidden questions", true);
         for (int i = 0; i < min; i++) {
             questions.save(question("hidden " + i, "hidden-films", "rfl2", "h-hf-" + i, false));
         }
         assertFalse(gameService.availableCategories("rfl2").contains("hidden-films"));
+    }
+
+    @Test
+    void disablingCategoryRemovesItFromPickerDespiteEnoughQuestions() {
+        int min = properties.questionsPerGame();
+        saveCategory("ready-films", "Готовая категория", "Ready films", true);
+        for (int i = 0; i < min; i++) {
+            questions.save(question("ready " + i, "ready-films", "rfl3", "h-rf3-" + i, true));
+        }
+        assertTrue(gameService.availableCategories("rfl3").contains("ready-films"));
+
+        CategoryEntity category = categories.findBySlug("ready-films").orElseThrow();
+        category.setActive(false);
+        categories.save(category);
+
+        assertFalse(gameService.availableCategories("rfl3").contains("ready-films"),
+                "a disabled category must leave the picker even with enough active questions");
+    }
+
+    private void saveCategory(String slug, String ru, String en, boolean active) {
+        CategoryEntity category = new CategoryEntity(slug);
+        category.setActive(active);
+        category.addTranslation(new CategoryTranslation(category, "ru", ru));
+        category.addTranslation(new CategoryTranslation(category, "en", en));
+        categories.save(category);
     }
 
     private static Question question(String text, String category, String language, String hash, boolean active) {

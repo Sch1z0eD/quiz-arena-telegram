@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,6 +54,8 @@ class AdminCategorySliceTest {
         mvc.perform(post("/api/admin/categories").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON).content(BODY)).andExpect(status().isUnauthorized());
         mvc.perform(delete("/api/admin/categories/science").with(csrf())).andExpect(status().isUnauthorized());
+        mvc.perform(put("/api/admin/categories/science/active").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"active\":false}")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -62,11 +66,29 @@ class AdminCategorySliceTest {
 
     @Test
     void createSucceedsWithSessionAndCsrf() throws Exception {
-        when(service.create(any(), any())).thenReturn(new CategoryRow("science", Map.of("ru", "Наука", "en", "Science"), 0, Map.of()));
+        when(service.create(any(), any(), anyBoolean()))
+                .thenReturn(new CategoryRow("science", Map.of("ru", "Наука", "en", "Science"), false, 0, Map.of()));
         mvc.perform(post("/api/admin/categories").with(admin()).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.slug").value("science"));
+                .andExpect(jsonPath("$.slug").value("science"))
+                .andExpect(jsonPath("$.active").value(false));
+    }
+
+    @Test
+    void toggleActiveSucceedsWithSessionAndCsrf() throws Exception {
+        when(service.setActive(any(), eq("science"), eq(true)))
+                .thenReturn(new CategoryRow("science", Map.of("ru", "Наука", "en", "Science"), true, 0, Map.of()));
+        mvc.perform(put("/api/admin/categories/science/active").with(admin()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    void toggleActiveRequiresCsrf() throws Exception {
+        mvc.perform(put("/api/admin/categories/science/active").with(admin())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true}")).andExpect(status().isForbidden());
     }
 
     @Test

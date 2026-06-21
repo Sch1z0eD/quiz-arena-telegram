@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -99,5 +100,30 @@ class MenuServiceTest {
         ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
         verify(menuMessenger).editCategories(eq(PRIVATE), eq(5), captor.capture(), eq(0), eq(true), eq(EN));
         assertEquals(List.of("b", "a"), captor.getValue());
+    }
+
+    @Test
+    void gameStartBlockedForDisabledCategory() throws Exception {
+        when(categoryService.isEnabled("secret")).thenReturn(false);
+        when(gameService.availableDifficulties("secret", "en"))
+                .thenReturn(new GameService.DifficultyOptions(List.of("easy"), true));
+        when(texts.notEnoughQuestions(EN)).thenReturn("blocked");
+
+        String toast = service.navigate(PRIVATE, 1, 7L, "Bob", "m:diff:secret:easy", EN);
+
+        assertEquals("blocked", toast);
+        verify(gameService, never()).startQuiz(anyLong(), anyBoolean(), anyLong(), anyString(),
+                anyString(), anyString(), any());
+    }
+
+    @Test
+    void duelStartBlockedForDisabledCategory() throws Exception {
+        when(categoryService.isEnabled("secret")).thenReturn(false);
+        when(texts.notEnoughQuestions(EN)).thenReturn("blocked");
+
+        String toast = service.navigate(PRIVATE, 1, 7L, "Bob", "m:dsearch:secret:easy", EN);
+
+        assertEquals("blocked", toast);
+        verify(duelService, never()).search(anyLong(), anyLong(), anyString(), anyString(), anyString(), anyInt(), any());
     }
 }

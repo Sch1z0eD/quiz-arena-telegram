@@ -70,7 +70,7 @@ public class QuizCommandHandler {
             String token = parts[i].toLowerCase();
             if (Difficulty.fromValue(token) != null) {
                 difficulty = token;
-            } else if (categoryService.exists(token)) {
+            } else if (categoryService.isEnabled(token)) {
                 category = token;
             }
         }

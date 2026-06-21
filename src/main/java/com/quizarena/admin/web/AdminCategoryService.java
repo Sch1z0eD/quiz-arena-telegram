@@ -55,13 +55,25 @@ public class AdminCategoryService {
     }
 
     @Transactional
-    public CategoryRow create(VerifiedAdmin admin, Map<String, String> names) {
+    public CategoryRow create(VerifiedAdmin admin, Map<String, String> names, boolean active) {
         Map<String, String> validated = validate(names);
         String slug = uniqueSlug(validated.get("en"));
         CategoryEntity category = new CategoryEntity(slug);
+        category.setActive(active);
         validated.forEach((language, name) -> category.addTranslation(new CategoryTranslation(category, language, name)));
         categories.save(category);
         audit.record(admin, "category.created", slug, summary(validated));
+        categoryService.refresh();
+        return toRow(category, Map.of());
+    }
+
+    @Transactional
+    public CategoryRow setActive(VerifiedAdmin admin, String slug, boolean active) {
+        CategoryEntity category = categories.findBySlug(slug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        category.setActive(active);
+        categories.save(category);
+        audit.record(admin, active ? "category.enabled" : "category.disabled", slug, null);
         categoryService.refresh();
         return toRow(category, Map.of());
     }
@@ -102,7 +114,7 @@ public class AdminCategoryService {
             names.put(translation.getLanguage(), translation.getName());
         }
         long total = byLanguage.values().stream().mapToLong(Long::longValue).sum();
-        return new CategoryRow(category.getSlug(), names, total, byLanguage);
+        return new CategoryRow(category.getSlug(), names, category.isActive(), total, byLanguage);
     }
 
     private Map<String, String> validate(Map<String, String> names) {

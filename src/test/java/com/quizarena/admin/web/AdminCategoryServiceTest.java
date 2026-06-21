@@ -15,7 +15,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,16 +39,28 @@ class AdminCategoryServiceTest {
             new AdminCategoryService(categories, questions, categoryService, audit);
 
     @Test
-    void createAutoSlugsPersistsAuditsAndRefreshes() {
+    void createInactiveByDefaultPersistsAuditsAndRefreshes() {
         when(categories.existsBySlug("science")).thenReturn(false);
 
-        service.create(ADMIN, Map.of("ru", "Наука", "en", "Science"));
+        service.create(ADMIN, Map.of("ru", "Наука", "en", "Science"), false);
 
         ArgumentCaptor<CategoryEntity> saved = ArgumentCaptor.forClass(CategoryEntity.class);
         verify(categories).save(saved.capture());
         assertEquals("science", saved.getValue().getSlug());
+        assertFalse(saved.getValue().isActive(), "a category created with active=false must be hidden");
         verify(audit).record(eq(ADMIN), eq("category.created"), eq("science"), anyString());
         verify(categoryService).refresh();
+    }
+
+    @Test
+    void createCanStartActive() {
+        when(categories.existsBySlug("science")).thenReturn(false);
+
+        service.create(ADMIN, Map.of("ru", "Наука", "en", "Science"), true);
+
+        ArgumentCaptor<CategoryEntity> saved = ArgumentCaptor.forClass(CategoryEntity.class);
+        verify(categories).save(saved.capture());
+        assertTrue(saved.getValue().isActive());
     }
 
     @Test
@@ -54,7 +68,7 @@ class AdminCategoryServiceTest {
         when(categories.existsBySlug("science")).thenReturn(true);
         when(categories.existsBySlug("science-2")).thenReturn(false);
 
-        service.create(ADMIN, Map.of("ru", "Наука вторая", "en", "Science"));
+        service.create(ADMIN, Map.of("ru", "Наука вторая", "en", "Science"), false);
 
         ArgumentCaptor<CategoryEntity> saved = ArgumentCaptor.forClass(CategoryEntity.class);
         verify(categories).save(saved.capture());
@@ -63,8 +77,33 @@ class AdminCategoryServiceTest {
 
     @Test
     void createRejectsMissingName() {
-        assertThrows(IllegalArgumentException.class, () -> service.create(ADMIN, Map.of("ru", "Наука")));
+        assertThrows(IllegalArgumentException.class, () -> service.create(ADMIN, Map.of("ru", "Наука"), false));
         verify(categories, never()).save(any());
+    }
+
+    @Test
+    void enableTogglesActiveAuditsAndRefreshes() {
+        CategoryEntity category = new CategoryEntity("science");
+        category.setActive(false);
+        when(categories.findBySlug("science")).thenReturn(Optional.of(category));
+
+        service.setActive(ADMIN, "science", true);
+
+        assertTrue(category.isActive());
+        verify(audit).record(eq(ADMIN), eq("category.enabled"), eq("science"), isNull());
+        verify(categoryService).refresh();
+    }
+
+    @Test
+    void disableTogglesActiveAuditsAndRefreshes() {
+        CategoryEntity category = new CategoryEntity("science");
+        when(categories.findBySlug("science")).thenReturn(Optional.of(category));
+
+        service.setActive(ADMIN, "science", false);
+
+        assertFalse(category.isActive());
+        verify(audit).record(eq(ADMIN), eq("category.disabled"), eq("science"), isNull());
+        verify(categoryService).refresh();
     }
 
     @Test

@@ -39,9 +39,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     long countByCategory(String category);
 
     @Query(value = """
-            SELECT category FROM questions
-            WHERE language = :language AND active = TRUE AND category IS NOT NULL
-            GROUP BY category
+            SELECT q.category FROM questions q
+            JOIN categories c ON c.slug = q.category AND c.active = TRUE
+            WHERE q.language = :language AND q.active = TRUE
+            GROUP BY q.category
             HAVING COUNT(*) >= :min
             """, nativeQuery = true)
     List<String> categoriesWithMinQuestions(@Param("language") String language, @Param("min") int min);
