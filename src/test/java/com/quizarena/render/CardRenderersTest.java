@@ -90,13 +90,20 @@ class CardRenderersTest {
     @Test
     void rendersRankCard() throws Exception {
         byte[] png = new RankCardRenderer(svg, localizer)
-                .render("Иван", new PersonalRank(800, 3), new PersonalRank(1234, 42), samplePng(), RU);
+                .render("Иван", new PersonalRank(800, 3), new PersonalRank(1234, 42), samplePng(), false, RU);
+        assertPng(png);
+    }
+
+    @Test
+    void rendersRankCardWeeklyInPrivate() {
+        byte[] png = new RankCardRenderer(svg, localizer)
+                .render("Иван", new PersonalRank(120, 5), new PersonalRank(1234, 42), null, true, EN);
         assertPng(png);
     }
 
     @Test
     void rendersRankCardForNewcomer() {
-        byte[] png = new RankCardRenderer(svg, localizer).render("Bob", null, null, null, EN);
+        byte[] png = new RankCardRenderer(svg, localizer).render("Bob", null, null, null, false, EN);
         assertPng(png);
     }
 

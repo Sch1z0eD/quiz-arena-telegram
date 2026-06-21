@@ -221,7 +221,14 @@ public class GameStore {
     }
 
     public PersonalRank personal(TopScope scope, long chatId, long userId) {
-        String key = leaderboardKey(scope, chatId);
+        return personalForKey(leaderboardKey(scope, chatId), userId);
+    }
+
+    public PersonalRank personalWeeklyGlobal(long userId) {
+        return personalForKey(lbWeeklyGlobal(isoWeek()), userId);
+    }
+
+    private PersonalRank personalForKey(String key, long userId) {
         String member = Long.toString(userId);
         Double score = redis.opsForZSet().score(key, member);
         if (score == null) {

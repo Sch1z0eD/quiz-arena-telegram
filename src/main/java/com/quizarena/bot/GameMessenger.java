@@ -99,7 +99,7 @@ public class GameMessenger {
                              byte[] avatar, Locale locale) {
         Thread.ofVirtual().name("rank-card").start(() -> {
             try {
-                sendPhoto(chatId, rankCardRenderer.render(name, group, global, avatar, locale),
+                sendPhoto(chatId, rankCardRenderer.render(name, group, global, avatar, chatId > 0, locale),
                         messageBuilder.eloCaption(locale, elo),
                         chatId > 0 ? messageBuilder.rankNavKeyboard(locale) : null);
             } catch (Exception e) {

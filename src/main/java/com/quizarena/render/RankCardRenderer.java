@@ -18,14 +18,13 @@ public class RankCardRenderer {
         this.localizer = localizer;
     }
 
-    public byte[] render(String name, PersonalRank group, PersonalRank global, byte[] avatar, Locale locale) {
+    public byte[] render(String name, PersonalRank scoped, PersonalRank global, byte[] avatar, boolean privateChat,
+                         Locale locale) {
         String template = svg.loadTemplate("rank_card.svg")
                 .replace("{{AVATAR}}", svg.avatarSlot(avatar, svg.initials(name), 78, 150, 40, "rank"));
         Map<String, String> values = Map.ofEntries(
                 Map.entry("NAME", name),
-                Map.entry("RANKLINE", group == null
-                        ? localizer.get(locale, "card.ranklineNew")
-                        : localizer.get(locale, "card.rankInChat", group.place())),
+                Map.entry("RANKLINE", rankline(scoped, privateChat, locale)),
                 Map.entry("RANK", global == null
                         ? localizer.get(locale, "card.rankNone")
                         : Long.toString(global.place())),
@@ -34,5 +33,16 @@ public class RankCardRenderer {
                 Map.entry("LABEL_PLACE", localizer.get(locale, "card.globalPlace")),
                 Map.entry("LABEL_POINTS", localizer.get(locale, "card.totalPoints")));
         return svg.rasterize(svg.fill(template, values));
+    }
+
+    private String rankline(PersonalRank scoped, boolean privateChat, Locale locale) {
+        if (privateChat) {
+            return scoped == null
+                    ? localizer.get(locale, "card.ranklineWeekNone")
+                    : localizer.get(locale, "card.rankThisWeek", scoped.place());
+        }
+        return scoped == null
+                ? localizer.get(locale, "card.ranklineNew")
+                : localizer.get(locale, "card.rankInChat", scoped.place());
     }
 }
