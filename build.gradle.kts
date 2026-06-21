@@ -24,12 +24,15 @@ dependencies {
     implementation("org.telegram:telegrambots-springboot-longpolling-starter:10.0.0")
     implementation("org.telegram:telegrambots-client:10.0.0")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
     implementation("org.apache.xmlgraphics:batik-codec:1.19")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.springframework.security:spring-security-test")
 }
 
 tasks.withType<Test> {
