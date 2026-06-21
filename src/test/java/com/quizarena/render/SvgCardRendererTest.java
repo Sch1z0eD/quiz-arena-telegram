@@ -32,6 +32,37 @@ class SvgCardRendererTest {
         assertEquals("&lt;b&gt;&amp;&quot;&apos;", renderer.xmlEscape("<b>&\"'"));
     }
 
+    @Test
+    void rendersNameWithEmojiWithoutCrashing() {
+        SvgCardRenderer renderer = new SvgCardRenderer(BRAND);
+        String name = "🤝Боб"; // a handshake emoji + Cyrillic, as seen live
+        String svg = renderer.fill(renderer.loadTemplate("result_card.svg"), Map.of(
+                "CATEGORY", "Наука",
+                "INITIALS", renderer.initials(name),
+                "NAME", renderer.truncateToWidth(name, 24f, 258),
+                "PLACE", "1 место",
+                "SCORE", "320",
+                "ACCURACY", "85%",
+                "CORRECT", "17"));
+        assertPng(renderer.rasterize(svg)); // a lone surrogate in the initials crashed Batik before the fix
+    }
+
+    @Test
+    void initialsSkipEmojiAtAndPunctuation() {
+        SvgCardRenderer renderer = new SvgCardRenderer(BRAND);
+        assertEquals("Б", renderer.initials("🤝Боб"));
+        assertEquals("ИП", renderer.initials("Иван Петров"));
+        assertEquals("B", renderer.initials("@bob"));
+        assertEquals("?", renderer.initials("🤝🤝"));
+    }
+
+    @Test
+    void xmlEscapeDropsLoneSurrogatesKeepsValidPairs() {
+        SvgCardRenderer renderer = new SvgCardRenderer(BRAND);
+        assertEquals("ab", renderer.xmlEscape("a\uD83Eb"));                   // lone high surrogate dropped
+        assertEquals("a🤝b", renderer.xmlEscape("a🤝b")); // valid emoji pair kept
+    }
+
     private static void assertPng(byte[] png) {
         assertTrue(png.length > 1000, "PNG too small: " + png.length);
         assertEquals((byte) 0x89, png[0]);

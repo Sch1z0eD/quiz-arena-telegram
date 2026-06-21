@@ -47,6 +47,9 @@ public class SvgCardRenderer {
             return text;
         }
         for (int len = text.length() - 1; len >= 1; len--) {
+            if (Character.isHighSurrogate(text.charAt(len - 1))) {
+                continue; // never cut between a surrogate pair (would orphan a high surrogate)
+            }
             String candidate = text.substring(0, len) + "…";
             if (sized.getStringBounds(candidate, frc).getWidth() <= maxWidth) {
                 return candidate;
@@ -87,31 +90,73 @@ public class SvgCardRenderer {
             return "?";
         }
         StringBuilder sb = new StringBuilder();
+        int taken = 0;
         for (String part : name.trim().split("\\s+")) {
-            if (part.isEmpty()) {
+            int cp = firstLetterOrDigit(part);
+            if (cp < 0) {
                 continue;
             }
-            char first = part.charAt(0);
-            if (first == '@' && part.length() > 1) {
-                first = part.charAt(1);
-            }
-            sb.append(Character.toUpperCase(first));
-            if (sb.length() == 2) {
+            sb.appendCodePoint(Character.toUpperCase(cp));
+            if (++taken == 2) {
                 break;
             }
         }
         return sb.isEmpty() ? "?" : sb.toString();
     }
 
+    // First letter/digit as a whole code point, skipping '@', emoji and punctuation. charAt(0) would
+    // split a surrogate pair and return a lone surrogate - the exact character that crashed Batik.
+    private static int firstLetterOrDigit(String part) {
+        int i = 0;
+        while (i < part.length()) {
+            int cp = part.codePointAt(i);
+            if (Character.isLetterOrDigit(cp)) {
+                return cp;
+            }
+            i += Character.charCount(cp);
+        }
+        return -1;
+    }
+
     public String xmlEscape(String value) {
         if (value == null) {
             return "";
         }
-        return value.replace("&", "&amp;")
+        return stripInvalidXml(value)
+                .replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&apos;");
+    }
+
+    // Telegram names carry emoji and arbitrary code points. XML 1.0 forbids lone surrogates and most
+    // control chars, and Batik aborts the entire render on the first illegal one (seen live with an
+    // emoji in a name). Drop the illegal ones; valid surrogate pairs are kept (they render as a
+    // missing glyph with DejaVu, which is cosmetic, not a crash).
+    private static String stripInvalidXml(String value) {
+        StringBuilder sb = new StringBuilder(value.length());
+        int i = 0;
+        while (i < value.length()) {
+            char c = value.charAt(i);
+            if (Character.isHighSurrogate(c) && i + 1 < value.length()
+                    && Character.isLowSurrogate(value.charAt(i + 1))) {
+                sb.append(c).append(value.charAt(i + 1));
+                i += 2;
+            } else {
+                if (isXmlChar(c)) {
+                    sb.append(c);
+                }
+                i++;
+            }
+        }
+        return sb.toString();
+    }
+
+    private static boolean isXmlChar(char c) {
+        return c == '\t' || c == '\n' || c == '\r'
+                || (c >= 0x20 && c <= 0xD7FF)
+                || (c >= 0xE000 && c <= 0xFFFD);
     }
 
     private String readTemplate(String name) {
