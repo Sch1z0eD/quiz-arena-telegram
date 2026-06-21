@@ -27,4 +27,9 @@ public class AdminController {
     public StatsResponse stats() {
         return stats.snapshot();
     }
+
+    @GetMapping("/stats/overview")
+    public OverviewResponse overview() {
+        return stats.overview();
+    }
 }

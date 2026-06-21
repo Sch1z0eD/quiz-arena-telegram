@@ -78,10 +78,27 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             """)
     List<CategoryLanguageCount> categoryCounts();
 
+    long countByActive(boolean active);
+
+    @Query("SELECT q.category AS name, COUNT(q) AS count FROM Question q WHERE q.active = true GROUP BY q.category")
+    List<NamedCount> activeCountByCategory();
+
+    @Query("SELECT q.difficulty AS name, COUNT(q) AS count FROM Question q WHERE q.active = true GROUP BY q.difficulty")
+    List<NamedCount> activeCountByDifficulty();
+
+    @Query("SELECT q.language AS name, COUNT(q) AS count FROM Question q WHERE q.active = true GROUP BY q.language")
+    List<NamedCount> activeCountByLanguage();
+
     interface CategoryLanguageCount {
         String getCategory();
 
         String getLanguage();
+
+        long getCount();
+    }
+
+    interface NamedCount {
+        String getName();
 
         long getCount();
     }

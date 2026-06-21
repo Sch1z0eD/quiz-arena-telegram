@@ -54,6 +54,29 @@ class AdminSecuritySliceTest {
                 .andExpect(jsonPath("$.answers").value(340));
     }
 
+    @Test
+    void overviewRequiresAuthentication() throws Exception {
+        mvc.perform(get("/api/admin/stats/overview")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void overviewReturnsDataWhenAuthenticated() throws Exception {
+        when(stats.overview()).thenReturn(new OverviewResponse(
+                new OverviewResponse.Players(5, 3, 4),
+                new OverviewResponse.Games(2, 1, 1),
+                new OverviewResponse.QuestionBreakdown(10, 2, List.of(), List.of(), List.of()),
+                new OverviewResponse.CategoryStats(3, 1),
+                List.of(new OverviewResponse.DailyCount("2026-06-21", 7)),
+                List.of(new OverviewResponse.NamedCount("science", 9)),
+                75, 100));
+        mvc.perform(get("/api/admin/stats/overview").with(admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.players.total").value(5))
+                .andExpect(jsonPath("$.accuracyPercent").value(75))
+                .andExpect(jsonPath("$.answersPerDay[0].day").value("2026-06-21"))
+                .andExpect(jsonPath("$.topCategories[0].name").value("science"));
+    }
+
     private static RequestPostProcessor admin() {
         return authentication(UsernamePasswordAuthenticationToken.authenticated(
                 new VerifiedAdmin(777, "Alice"), null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
