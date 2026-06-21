@@ -47,11 +47,13 @@ public class GameService {
     private final Localizer localizer;
     private final LocaleService localeService;
     private final EloService eloService;
+    private final AvatarService avatarService;
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> timers = new ConcurrentHashMap<>();
 
     public GameService(GameStore store, GameMessenger messenger, QuestionRepository questionRepository,
                        AnswerRepository answerRepository, TaskScheduler scheduler, GameProperties properties,
-                       Localizer localizer, LocaleService localeService, EloService eloService) {
+                       Localizer localizer, LocaleService localeService, EloService eloService,
+                       AvatarService avatarService) {
         this.store = store;
         this.messenger = messenger;
         this.questionRepository = questionRepository;
@@ -61,6 +63,7 @@ public class GameService {
         this.localizer = localizer;
         this.localeService = localeService;
         this.eloService = eloService;
+        this.avatarService = avatarService;
     }
 
     public boolean gameActive(long chatId) {
@@ -203,14 +206,14 @@ public class GameService {
 
     private GameResult buildResult(long chatId, String categorySlug, List<Standing> board, Long winnerId, long gameId) {
         if (winnerId == null || board.isEmpty()) {
-            return new GameResult(categorySlug, false, "", 0L, 0L, 0L, null, board, chatId < 0);
+            return new GameResult(categorySlug, false, "", 0L, 0L, 0L, null, board, chatId < 0, null);
         }
         long answered = answerRepository.countByGameIdAndUserId(gameId, winnerId);
         long correct = answerRepository.countByGameIdAndUserIdAndCorrectTrue(gameId, winnerId);
         PersonalRank global = store.personal(TopScope.GLOBAL, chatId, winnerId);
         Long place = global == null ? null : global.place();
         return new GameResult(categorySlug, true, board.get(0).name(), board.get(0).score(),
-                correct, answered, place, board, chatId < 0);
+                correct, answered, place, board, chatId < 0, avatarService.get(winnerId));
     }
 
     private void beginQuestion(long chatId, int index) throws TelegramApiException {

@@ -123,7 +123,8 @@ public class GameMessenger {
                     return;
                 }
                 byte[] png = resultCardRenderer.render(result.categorySlug(), result.winnerName(),
-                        result.winnerScore(), accuracy(result), result.correct(), result.globalPlace(), locale);
+                        result.winnerScore(), accuracy(result), result.correct(), result.globalPlace(),
+                        result.winnerAvatar(), locale);
                 if (!result.group()) {
                     sendPhoto(chatId, png, null);
                     return;

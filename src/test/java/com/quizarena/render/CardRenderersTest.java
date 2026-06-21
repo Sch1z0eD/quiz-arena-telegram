@@ -31,13 +31,13 @@ class CardRenderersTest {
 
     @Test
     void rendersResultCard() {
-        byte[] png = new ResultCardRenderer(svg, localizer).render("computers", "Иван", 320, 85, 17, 3L, RU);
+        byte[] png = new ResultCardRenderer(svg, localizer).render("computers", "Иван", 320, 85, 17, 3L, null, RU);
         assertPng(png);
     }
 
     @Test
     void cornerIsOpaqueCardColourNotWhite() throws Exception {
-        byte[] png = new ResultCardRenderer(svg, localizer).render("computers", "Иван", 320, 85, 17, 3L, RU);
+        byte[] png = new ResultCardRenderer(svg, localizer).render("computers", "Иван", 320, 85, 17, 3L, null, RU);
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(png));
         int argb = image.getRGB(1, 1);
         assertEquals(0xFF, (argb >>> 24) & 0xFF, "corner must be opaque");
@@ -112,6 +112,13 @@ class CardRenderersTest {
         DuelResult result = new DuelResult("science", "Иван", 320, "Боб", 150,
                 DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, avatar, avatar);
         assertPng(new DuelResultCardRenderer(svg, localizer).render(result, RU));
+    }
+
+    @Test
+    void rendersResultCardWithAvatar() throws Exception {
+        byte[] png = new ResultCardRenderer(svg, localizer)
+                .render("computers", "Иван", 320, 85, 17, 3L, samplePng(), RU);
+        assertPng(png);
     }
 
     private static byte[] samplePng() throws Exception {

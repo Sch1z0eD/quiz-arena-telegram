@@ -18,10 +18,11 @@ public class ResultCardRenderer {
     }
 
     public byte[] render(String categorySlug, String name, long score, int accuracyPercent, long correct,
-                         Long place, Locale locale) {
+                         Long place, byte[] avatar, Locale locale) {
+        String template = svg.loadTemplate("result_card.svg")
+                .replace("{{AVATAR}}", svg.avatarSlot(avatar, svg.initials(name), 78, 178, 40, "res"));
         Map<String, String> values = Map.ofEntries(
                 Map.entry("CATEGORY", categoryLabel(categorySlug, locale)),
-                Map.entry("INITIALS", svg.initials(name)),
                 Map.entry("NAME", name),
                 Map.entry("PLACE", place == null
                         ? localizer.get(locale, "card.noPlace")
@@ -33,7 +34,7 @@ public class ResultCardRenderer {
                 Map.entry("LABEL_ACCURACY", localizer.get(locale, "card.accuracy")),
                 Map.entry("LABEL_CORRECT", localizer.get(locale, "card.correct")),
                 Map.entry("LABEL_FOOTER", localizer.get(locale, "card.quizFinished")));
-        return svg.rasterize(svg.fill(svg.loadTemplate("result_card.svg"), values));
+        return svg.rasterize(svg.fill(template, values));
     }
 
     private String categoryLabel(String slug, Locale locale) {

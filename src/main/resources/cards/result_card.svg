@@ -1,11 +1,13 @@
-<svg width="680" height="420" viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+<svg width="680" height="420" viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="DejaVu Sans, sans-serif">
+  <defs>
+    <clipPath id="res"><circle cx="78" cy="178" r="40"/></clipPath>
+  </defs>
   <rect x="0" y="0" width="680" height="420" rx="22" fill="#14182e"/>
   <rect x="4" y="4" width="672" height="412" rx="19" fill="none" stroke="#2a3056" stroke-width="1.5"/>
   <text x="36" y="54" fill="#13d6c0" font-size="22" font-weight="700" letter-spacing="5">{{BRAND}}</text>
   <rect x="420" y="32" width="224" height="38" rx="19" fill="#1c2140" stroke="#2a3056" stroke-width="1"/>
   <text x="532" y="57" fill="#aeb4d6" font-size="18" text-anchor="middle">{{CATEGORY}}</text>
-  <circle cx="78" cy="178" r="40" fill="#6c5ce7"/>
-  <text x="78" y="192" fill="#14182e" font-size="32" font-weight="700" text-anchor="middle">{{INITIALS}}</text>
+  {{AVATAR}}
   <text x="138" y="170" fill="#ffffff" font-size="32" font-weight="700">{{NAME}}</text>
   <text x="138" y="204" fill="#8b91b8" font-size="19">{{PLACE}}</text>
   <text x="34" y="322" fill="#ffffff" font-size="96" font-weight="800">{{SCORE}}</text>

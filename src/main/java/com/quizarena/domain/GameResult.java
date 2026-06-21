@@ -11,5 +11,6 @@ public record GameResult(
         long answered,
         Long globalPlace,
         List<Standing> scoreboard,
-        boolean group) {
+        boolean group,
+        byte[] winnerAvatar) {
 }

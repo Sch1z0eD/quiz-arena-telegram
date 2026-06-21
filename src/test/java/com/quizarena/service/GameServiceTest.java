@@ -26,7 +26,7 @@ class GameServiceTest {
     private final GameService service = new GameService(
             mock(GameStore.class), mock(GameMessenger.class), questions, mock(AnswerRepository.class),
             mock(TaskScheduler.class), properties, mock(Localizer.class), mock(LocaleService.class),
-            mock(EloService.class));
+            mock(EloService.class), mock(AvatarService.class));
 
     @Test
     void hasEnoughQuestionsScopesToLanguage() {
