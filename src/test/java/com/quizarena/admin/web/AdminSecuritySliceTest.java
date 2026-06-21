@@ -77,6 +77,21 @@ class AdminSecuritySliceTest {
                 .andExpect(jsonPath("$.topCategories[0].name").value("science"));
     }
 
+    @Test
+    void answerDistributionRequiresAuthentication() throws Exception {
+        mvc.perform(get("/api/admin/stats/answer-distribution")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void answerDistributionReturnsDataWhenAuthenticated() throws Exception {
+        when(stats.answerDistribution()).thenReturn(List.of(new CategoryAnswerDistribution("science", 2, 1, 1, 0, 4)));
+        mvc.perform(get("/api/admin/stats/answer-distribution").with(admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].category").value("science"))
+                .andExpect(jsonPath("$[0].a").value(2))
+                .andExpect(jsonPath("$[0].total").value(4));
+    }
+
     private static RequestPostProcessor admin() {
         return authentication(UsernamePasswordAuthenticationToken.authenticated(
                 new VerifiedAdmin(777, "Alice"), null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));

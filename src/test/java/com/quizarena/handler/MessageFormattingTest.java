@@ -1,6 +1,7 @@
 package com.quizarena.handler;
 
 import com.quizarena.config.BrandProperties;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.Question;
 import com.quizarena.domain.Standing;
 import com.quizarena.i18n.Localizer;
@@ -38,12 +39,23 @@ class MessageFormattingTest {
     @Test
     void revealTextEscapesAndBlockquotesQuestionWithoutNesting() {
         Question q = question("a < b & c", "x < y", "z & w", "p > q", "ok");
-        String text = builder.revealText(EN, q);
+        String text = builder.revealText(EN, q, OptionOrder.identity());
         assertTrue(text.startsWith("<blockquote>"), text);
         assertTrue(text.contains("a &lt; b &amp; c"), text);
         assertTrue(text.contains("x &lt; y"), "option text inside reveal is escaped");
         assertEquals(1, count(text, "<blockquote"), "exactly one blockquote, options stay outside");
         assertTrue(text.indexOf("</blockquote>") < text.indexOf("x &lt; y"), "blockquote closes before options");
+    }
+
+    @Test
+    void revealRendersOptionsInDisplayOrderAndMarksCorrectAtItsSlot() {
+        // correct option is storage index 0 ("CORRECT"); order shows storage 1 at slot A and storage 0 at slot B
+        Question q = question("Q?", "CORRECT", "second", "third", "fourth");
+        String text = builder.revealText(EN, q, OptionOrder.parse("1,0,2,3"));
+
+        assertTrue(text.contains("A. second"), "slot A must show the storage-1 option, " + text);
+        assertTrue(text.contains("B. CORRECT"), "the correct option moves to slot B under this order, " + text);
+        assertTrue(text.trim().endsWith("B</b>"), "answer footer must name the correct option's display slot, " + text);
     }
 
     @Test

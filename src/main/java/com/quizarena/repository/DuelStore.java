@@ -1,6 +1,7 @@
 package com.quizarena.repository;
 
 import com.quizarena.config.GameProperties;
+import com.quizarena.domain.OptionOrder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -104,10 +105,11 @@ public class DuelStore {
         redis.expire(duelKey(duelId), ttl);
     }
 
-    public void beginQuestion(long duelId, int index, int correctOption, long token, long startMillis) {
+    public void beginQuestion(long duelId, int index, int correctOption, OptionOrder order, long token, long startMillis) {
         hash().putAll(duelKey(duelId), Map.of(
                 "qIndex", Integer.toString(index),
                 "qCorrect", Integer.toString(correctOption),
+                "qOrder", order.toCsv(),
                 "qStart", Long.toString(startMillis)));
         redis.expire(duelKey(duelId), ttl);
         redis.opsForValue().set(roundKey(duelId), Long.toString(token), ttl);
@@ -154,7 +156,7 @@ public class DuelStore {
         List<String> v = hash().multiGet(duelKey(duelId), List.of(
                 "qIndex", "total", "qCorrect", "qStart", "qIds",
                 "chatA", "chatB", "userA", "userB", "qMsgA", "qMsgB", "cat", "diff", "nameA", "nameB",
-                "localeA", "localeB"));
+                "localeA", "localeB", "qOrder"));
         if (v.get(4) == null) {
             return null;
         }
@@ -163,7 +165,8 @@ public class DuelStore {
                 parseIds(v.get(4)),
                 readLong(v.get(5), 0L), readLong(v.get(6), 0L), readLong(v.get(7), 0L), readLong(v.get(8), 0L),
                 readInt(v.get(9), 0), readInt(v.get(10), 0), orEmpty(v.get(11)), orEmpty(v.get(12)),
-                orEmpty(v.get(13)), orEmpty(v.get(14)), orEmpty(v.get(15)), orEmpty(v.get(16)));
+                orEmpty(v.get(13)), orEmpty(v.get(14)), orEmpty(v.get(15)), orEmpty(v.get(16)),
+                OptionOrder.parse(v.get(17)));
     }
 
     public void cleanup(long duelId, int total, long userA, long userB) {
@@ -275,7 +278,8 @@ public class DuelStore {
             String nameA,
             String nameB,
             String localeA,
-            String localeB) {
+            String localeB,
+            OptionOrder order) {
 
         public long currentQuestionId() {
             return questionIds.get(qIndex);

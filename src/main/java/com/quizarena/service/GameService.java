@@ -8,6 +8,7 @@ import com.quizarena.domain.GameMode;
 import com.quizarena.domain.GameResult;
 import com.quizarena.domain.GameState;
 import com.quizarena.domain.JoinResult;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.PersonalRank;
 import com.quizarena.domain.Profile;
 import com.quizarena.domain.Question;
@@ -48,12 +49,13 @@ public class GameService {
     private final LocaleService localeService;
     private final EloService eloService;
     private final AvatarService avatarService;
+    private final OptionShuffler shuffler;
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> timers = new ConcurrentHashMap<>();
 
     public GameService(GameStore store, GameMessenger messenger, QuestionRepository questionRepository,
                        AnswerRepository answerRepository, TaskScheduler scheduler, GameProperties properties,
                        Localizer localizer, LocaleService localeService, EloService eloService,
-                       AvatarService avatarService) {
+                       AvatarService avatarService, OptionShuffler shuffler) {
         this.store = store;
         this.messenger = messenger;
         this.questionRepository = questionRepository;
@@ -64,6 +66,7 @@ public class GameService {
         this.localeService = localeService;
         this.eloService = eloService;
         this.avatarService = avatarService;
+        this.shuffler = shuffler;
     }
 
     public boolean gameActive(long chatId) {
@@ -148,7 +151,7 @@ public class GameService {
         if (outcome == 0L) {
             return RecordResult.of(RecordResult.Status.DUPLICATE);
         }
-        boolean correct = option == snapshot.correctOption();
+        boolean correct = snapshot.order().storageAt(option) == snapshot.correctOption();
         long points = correct ? speedBonus(snapshot.qStart()) : 0L;
         answerRepository.save(new AnswerRecord(snapshot.gameId(), chatId, userId,
                 snapshot.currentQuestionId(), correct, (int) points, System.currentTimeMillis(), GameMode.GAME.name()));
@@ -171,7 +174,8 @@ public class GameService {
         Question question = questionRepository.findById(snapshot.currentQuestionId()).orElse(null);
         if (question != null) {
             try {
-                messenger.revealAnswer(chatId, snapshot.questionMessageId(), question, localeService.parse(snapshot.locale()));
+                messenger.revealAnswer(chatId, snapshot.questionMessageId(), question, snapshot.order(),
+                        localeService.parse(snapshot.locale()));
             } catch (TelegramApiException e) {
                 log.warn("Reveal failed in chat {}", chatId, e);
             }
@@ -233,8 +237,9 @@ public class GameService {
         Snapshot snapshot = store.snapshot(chatId);
         long token = store.nextToken();
         Question question = questionRepository.findById(snapshot.questionIds().get(index)).orElseThrow();
-        store.beginQuestion(chatId, index, question.getCorrectOption(), token, System.currentTimeMillis());
-        int messageId = messenger.sendQuestion(chatId, question, index, snapshot.total(), token,
+        OptionOrder order = shuffler.next();
+        store.beginQuestion(chatId, index, question.getCorrectOption(), order, token, System.currentTimeMillis());
+        int messageId = messenger.sendQuestion(chatId, question, order, index, snapshot.total(), token,
                 localeService.parse(snapshot.locale()));
         store.setQuestionMessageId(chatId, messageId);
         scheduleQuestionTimer(chatId, token);

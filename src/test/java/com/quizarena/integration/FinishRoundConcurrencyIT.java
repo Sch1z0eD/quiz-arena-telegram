@@ -1,5 +1,6 @@
 package com.quizarena.integration;
 
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.repository.GameStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ class FinishRoundConcurrencyIT extends AbstractIntegrationTest {
                 long chatId = 100_000L + round;
                 long token = store.nextToken();
                 // Arm the round: the round key now holds this token.
-                store.beginQuestion(chatId, 0, 0, token, System.currentTimeMillis());
+                store.beginQuestion(chatId, 0, 0, OptionOrder.identity(), token, System.currentTimeMillis());
 
                 CountDownLatch gate = new CountDownLatch(1);
                 List<Future<Boolean>> attempts = new ArrayList<>();

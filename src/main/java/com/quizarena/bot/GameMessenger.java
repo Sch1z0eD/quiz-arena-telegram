@@ -2,6 +2,7 @@ package com.quizarena.bot;
 
 import com.quizarena.domain.GameResult;
 import com.quizarena.domain.PersonalRank;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.Question;
 import com.quizarena.domain.Standing;
 import com.quizarena.handler.MessageBuilder;
@@ -70,17 +71,18 @@ public class GameMessenger {
         editPlain(chatId, messageId, messageBuilder.lobbyStartedText(locale, participants));
     }
 
-    public int sendQuestion(long chatId, Question question, int index, int total, long token, Locale locale)
+    public int sendQuestion(long chatId, Question question, OptionOrder order, int index, int total, long token, Locale locale)
             throws TelegramApiException {
         Message sent = telegramClient.execute(SendMessage.builder()
                 .chatId(chatId).text(messageBuilder.questionText(locale, question, index, total))
-                .replyMarkup(messageBuilder.answerKeyboard(question, token)).parseMode("HTML").build());
+                .replyMarkup(messageBuilder.answerKeyboard(question, order, token)).parseMode("HTML").build());
         return sent.getMessageId();
     }
 
-    public void revealAnswer(long chatId, int messageId, Question question, Locale locale) throws TelegramApiException {
+    public void revealAnswer(long chatId, int messageId, Question question, OptionOrder order, Locale locale)
+            throws TelegramApiException {
         telegramClient.execute(EditMessageText.builder()
-                .chatId(chatId).messageId(messageId).text(messageBuilder.revealText(locale, question))
+                .chatId(chatId).messageId(messageId).text(messageBuilder.revealText(locale, question, order))
                 .replyMarkup(InlineKeyboardMarkup.builder().build()).parseMode("HTML").build());
     }
 

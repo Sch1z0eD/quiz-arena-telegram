@@ -64,9 +64,10 @@ class GameLifecycleIT extends AbstractIntegrationTest {
             GameStore.Snapshot snapshot = store.snapshot(CHAT);
             assertNotNull(snapshot, "game should still be running at question " + i);
             long token = currentRoundToken();
-            RecordResult result = gameService.recordAnswer(CHAT, USER, token, snapshot.correctOption());
+            int correctSlot = snapshot.order().displayOfCorrect(snapshot.correctOption());
+            RecordResult result = gameService.recordAnswer(CHAT, USER, token, correctSlot);
             assertEquals(RecordResult.Status.ANSWERED, result.status());
-            assertTrue(result.correct());
+            assertTrue(result.correct(), "answering the displayed slot of the correct option must score correct");
             assertTrue(result.allAnswered(), "a single player completes the round with one answer");
             gameService.finishQuestion(CHAT, token); // advances, or ends the game after the last question
         }

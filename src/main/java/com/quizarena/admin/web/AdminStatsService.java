@@ -48,6 +48,13 @@ public class AdminStatsService {
         return new StatsResponse(questions.count(), answers.count());
     }
 
+    public List<CategoryAnswerDistribution> answerDistribution() {
+        return questions.correctOptionDistribution().stream()
+                .map(row -> new CategoryAnswerDistribution(row.getCategory(), row.getA(), row.getB(),
+                        row.getC(), row.getD(), row.getTotal()))
+                .toList();
+    }
+
     public OverviewResponse overview() {
         Instant now = clock.instant();
         Cached current = cached;

@@ -89,12 +89,40 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("SELECT q.language AS name, COUNT(q) AS count FROM Question q WHERE q.active = true GROUP BY q.language")
     List<NamedCount> activeCountByLanguage();
 
+    @Query("""
+            SELECT q.category AS category,
+                   SUM(CASE WHEN q.correctOption = 0 THEN 1 ELSE 0 END) AS a,
+                   SUM(CASE WHEN q.correctOption = 1 THEN 1 ELSE 0 END) AS b,
+                   SUM(CASE WHEN q.correctOption = 2 THEN 1 ELSE 0 END) AS c,
+                   SUM(CASE WHEN q.correctOption = 3 THEN 1 ELSE 0 END) AS d,
+                   COUNT(q) AS total
+            FROM Question q
+            WHERE q.category IS NOT NULL
+            GROUP BY q.category
+            ORDER BY q.category
+            """)
+    List<CorrectPositionRow> correctOptionDistribution();
+
     interface CategoryLanguageCount {
         String getCategory();
 
         String getLanguage();
 
         long getCount();
+    }
+
+    interface CorrectPositionRow {
+        String getCategory();
+
+        long getA();
+
+        long getB();
+
+        long getC();
+
+        long getD();
+
+        long getTotal();
     }
 
     interface NamedCount {

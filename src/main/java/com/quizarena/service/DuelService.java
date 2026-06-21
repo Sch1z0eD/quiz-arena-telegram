@@ -6,6 +6,7 @@ import com.quizarena.config.DuelProperties;
 import com.quizarena.domain.AnswerRecord;
 import com.quizarena.domain.DuelInvite;
 import com.quizarena.domain.DuelRecord;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.DuelResult;
 import com.quizarena.domain.Matchup;
 import com.quizarena.domain.GameMode;
@@ -52,6 +53,7 @@ public class DuelService {
     private final InviteStore inviteStore;
     private final BotIdentity botIdentity;
     private final Localizer localizer;
+    private final OptionShuffler shuffler;
 
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> searchTimers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> duelTimers = new ConcurrentHashMap<>();
@@ -60,7 +62,7 @@ public class DuelService {
                        QuestionRepository questionRepository, AnswerRepository answerRepository,
                        DuelRepository duelRepository, TaskScheduler scheduler, DuelProperties properties,
                        LocaleService localeService, EloService eloService, AvatarService avatarService,
-                       InviteStore inviteStore, BotIdentity botIdentity, Localizer localizer) {
+                       InviteStore inviteStore, BotIdentity botIdentity, Localizer localizer, OptionShuffler shuffler) {
         this.store = store;
         this.messenger = messenger;
         this.gameStore = gameStore;
@@ -75,6 +77,7 @@ public class DuelService {
         this.inviteStore = inviteStore;
         this.botIdentity = botIdentity;
         this.localizer = localizer;
+        this.shuffler = shuffler;
     }
 
     public void search(long chatId, long userId, String name, String category, String difficulty, int messageId,
@@ -174,7 +177,7 @@ public class DuelService {
         if (result == 0L) {
             return RecordResult.of(RecordResult.Status.DUPLICATE);
         }
-        boolean correct = option == snapshot.correctOption();
+        boolean correct = snapshot.order().storageAt(option) == snapshot.correctOption();
         long points = correct
                 ? Scoring.speedBonus(snapshot.qStart(), System.currentTimeMillis(),
                         properties.questionSeconds() * 1000L, properties.basePoints())
@@ -200,8 +203,8 @@ public class DuelService {
         }
         Question question = questionRepository.findById(snapshot.currentQuestionId()).orElse(null);
         if (question != null) {
-            messenger.reveal(snapshot.chatA(), snapshot.questionMessageA(), question, localeService.parse(snapshot.localeA()));
-            messenger.reveal(snapshot.chatB(), snapshot.questionMessageB(), question, localeService.parse(snapshot.localeB()));
+            messenger.reveal(snapshot.chatA(), snapshot.questionMessageA(), question, snapshot.order(), localeService.parse(snapshot.localeA()));
+            messenger.reveal(snapshot.chatB(), snapshot.questionMessageB(), question, snapshot.order(), localeService.parse(snapshot.localeB()));
         }
         advance(duelId, snapshot);
     }
@@ -267,10 +270,11 @@ public class DuelService {
         Snapshot snapshot = store.snapshot(duelId);
         long token = store.nextToken();
         Question question = questionRepository.findById(snapshot.questionIds().get(index)).orElseThrow();
-        store.beginQuestion(duelId, index, question.getCorrectOption(), token, System.currentTimeMillis());
-        int messageA = messenger.sendQuestion(snapshot.chatA(), question, index, snapshot.total(), duelId, token,
+        OptionOrder order = shuffler.next();
+        store.beginQuestion(duelId, index, question.getCorrectOption(), order, token, System.currentTimeMillis());
+        int messageA = messenger.sendQuestion(snapshot.chatA(), question, order, index, snapshot.total(), duelId, token,
                 localeService.parse(snapshot.localeA()));
-        int messageB = messenger.sendQuestion(snapshot.chatB(), question, index, snapshot.total(), duelId, token,
+        int messageB = messenger.sendQuestion(snapshot.chatB(), question, order, index, snapshot.total(), duelId, token,
                 localeService.parse(snapshot.localeB()));
         store.setQuestionMessages(duelId, messageA, messageB);
         scheduleDuelTimer(duelId, token);

@@ -1,5 +1,6 @@
 package com.quizarena.integration;
 
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.repository.GameStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ class RecordAnswerConcurrencyIT extends AbstractIntegrationTest {
                 long chatId = 200_000L + round;
                 long userId = 777L;
                 long token = store.nextToken();
-                store.beginQuestion(chatId, 0, 0, token, System.currentTimeMillis());
+                store.beginQuestion(chatId, 0, 0, OptionOrder.identity(), token, System.currentTimeMillis());
 
                 CountDownLatch gate = new CountDownLatch(1);
                 List<Future<Long>> attempts = new ArrayList<>();
@@ -63,7 +64,7 @@ class RecordAnswerConcurrencyIT extends AbstractIntegrationTest {
         long chatId = 250_000L;
         long userId = 5L;
         long token = store.nextToken();
-        store.beginQuestion(chatId, 0, 0, token, System.currentTimeMillis());
+        store.beginQuestion(chatId, 0, 0, OptionOrder.identity(), token, System.currentTimeMillis());
 
         assertEquals(-1L, store.recordAnswer(chatId, 0, token + 999L, userId), "stale token -> -1");
         assertEquals(1L, store.recordAnswer(chatId, 0, token, userId), "current token -> accepted");

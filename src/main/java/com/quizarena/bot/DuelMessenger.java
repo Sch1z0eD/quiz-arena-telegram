@@ -2,6 +2,7 @@ package com.quizarena.bot;
 
 import com.quizarena.domain.DuelResult;
 import com.quizarena.domain.Matchup;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.Question;
 import com.quizarena.handler.MessageBuilder;
 import com.quizarena.handler.UiTexts;
@@ -108,18 +109,18 @@ public class DuelMessenger {
         }
     }
 
-    public int sendQuestion(long chatId, Question question, int index, int total, long duelId, long token,
+    public int sendQuestion(long chatId, Question question, OptionOrder order, int index, int total, long duelId, long token,
                             Locale locale) throws TelegramApiException {
         Message sent = telegramClient.execute(SendMessage.builder()
                 .chatId(chatId).text(messageBuilder.questionText(locale, question, index, total))
-                .replyMarkup(messageBuilder.duelAnswerKeyboard(question, duelId, token)).parseMode("HTML").build());
+                .replyMarkup(messageBuilder.duelAnswerKeyboard(question, order, duelId, token)).parseMode("HTML").build());
         return sent.getMessageId();
     }
 
-    public void reveal(long chatId, int messageId, Question question, Locale locale) {
+    public void reveal(long chatId, int messageId, Question question, OptionOrder order, Locale locale) {
         try {
             telegramClient.execute(EditMessageText.builder()
-                    .chatId(chatId).messageId(messageId).text(messageBuilder.revealText(locale, question))
+                    .chatId(chatId).messageId(messageId).text(messageBuilder.revealText(locale, question, order))
                     .replyMarkup(noKeyboard()).parseMode("HTML").build());
         } catch (TelegramApiException e) {
             log.warn("Duel reveal failed in chat {}", chatId, e);

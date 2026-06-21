@@ -2,6 +2,7 @@ package com.quizarena.repository;
 
 import com.quizarena.config.GameProperties;
 import com.quizarena.domain.GameState;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.PersonalRank;
 import com.quizarena.domain.Standing;
 import com.quizarena.domain.TopScope;
@@ -117,10 +118,11 @@ public class GameStore {
         return value == null ? 0L : value;
     }
 
-    public void beginQuestion(long chatId, int index, int correctOption, long token, long startMillis) {
+    public void beginQuestion(long chatId, int index, int correctOption, OptionOrder order, long token, long startMillis) {
         hash().putAll(gameKey(chatId), Map.of(
                 "qIndex", Integer.toString(index),
                 "qCorrect", Integer.toString(correctOption),
+                "qOrder", order.toCsv(),
                 "qStart", Long.toString(startMillis)));
         touch(gameKey(chatId));
         redis.opsForValue().set(roundKey(chatId), Long.toString(token), ttl);
@@ -158,7 +160,7 @@ public class GameStore {
             return null;
         }
         List<String> values = hash().multiGet(gameKey(chatId),
-                List.of("state", "qIndex", "total", "qCorrect", "qStart", "qMsgId", "qIds", "cat", "diff", "gameId", "locale"));
+                List.of("state", "qIndex", "total", "qCorrect", "qStart", "qMsgId", "qIds", "cat", "diff", "gameId", "locale", "qOrder"));
         String state = values.get(0);
         if (state == null) {
             return null;
@@ -174,7 +176,8 @@ public class GameStore {
                 orEmpty(values.get(7)),
                 orEmpty(values.get(8)),
                 readLong(values.get(9), 0L),
-                orEmpty(values.get(10)));
+                orEmpty(values.get(10)),
+                OptionOrder.parse(values.get(11)));
     }
 
     public List<Standing> scoreboard(long chatId) {
@@ -356,7 +359,8 @@ public class GameStore {
             String category,
             String difficulty,
             long gameId,
-            String locale) {
+            String locale,
+            OptionOrder order) {
 
         public long currentQuestionId() {
             return questionIds.get(qIndex);

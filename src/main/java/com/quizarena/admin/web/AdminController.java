@@ -32,4 +32,9 @@ public class AdminController {
     public OverviewResponse overview() {
         return stats.overview();
     }
+
+    @GetMapping("/stats/answer-distribution")
+    public java.util.List<CategoryAnswerDistribution> answerDistribution() {
+        return stats.answerDistribution();
+    }
 }

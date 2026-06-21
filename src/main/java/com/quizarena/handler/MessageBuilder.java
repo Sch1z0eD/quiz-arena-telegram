@@ -2,6 +2,7 @@ package com.quizarena.handler;
 
 import com.quizarena.domain.DuelResult;
 import com.quizarena.domain.JoinResult;
+import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.PersonalRank;
 import com.quizarena.domain.Question;
 import com.quizarena.domain.RecordResult;
@@ -55,26 +56,26 @@ public class MessageBuilder {
         return localizer.get(locale, "question.title", index + 1, total, escape(question.getText()));
     }
 
-    public InlineKeyboardMarkup answerKeyboard(Question question, long token) {
-        return answerKeyboard(question, option -> "a:" + token + ":" + option);
+    public InlineKeyboardMarkup answerKeyboard(Question question, OptionOrder order, long token) {
+        return answerKeyboard(question, order, slot -> "a:" + token + ":" + slot);
     }
 
-    public InlineKeyboardMarkup duelAnswerKeyboard(Question question, long duelId, long token) {
-        return answerKeyboard(question, option -> "d:" + duelId + ":" + token + ":" + option);
+    public InlineKeyboardMarkup duelAnswerKeyboard(Question question, OptionOrder order, long duelId, long token) {
+        return answerKeyboard(question, order, slot -> "d:" + duelId + ":" + token + ":" + slot);
     }
 
-    private InlineKeyboardMarkup answerKeyboard(Question question, IntFunction<String> callback) {
+    private InlineKeyboardMarkup answerKeyboard(Question question, OptionOrder order, IntFunction<String> callback) {
         if (allOptionsShort(question)) {
             return InlineKeyboardMarkup.builder()
-                    .keyboardRow(new InlineKeyboardRow(button(question, callback, 0), button(question, callback, 1)))
-                    .keyboardRow(new InlineKeyboardRow(button(question, callback, 2), button(question, callback, 3)))
+                    .keyboardRow(new InlineKeyboardRow(button(question, order, callback, 0), button(question, order, callback, 1)))
+                    .keyboardRow(new InlineKeyboardRow(button(question, order, callback, 2), button(question, order, callback, 3)))
                     .build();
         }
         return InlineKeyboardMarkup.builder()
-                .keyboardRow(new InlineKeyboardRow(button(question, callback, 0)))
-                .keyboardRow(new InlineKeyboardRow(button(question, callback, 1)))
-                .keyboardRow(new InlineKeyboardRow(button(question, callback, 2)))
-                .keyboardRow(new InlineKeyboardRow(button(question, callback, 3)))
+                .keyboardRow(new InlineKeyboardRow(button(question, order, callback, 0)))
+                .keyboardRow(new InlineKeyboardRow(button(question, order, callback, 1)))
+                .keyboardRow(new InlineKeyboardRow(button(question, order, callback, 2)))
+                .keyboardRow(new InlineKeyboardRow(button(question, order, callback, 3)))
                 .build();
     }
 
@@ -90,18 +91,19 @@ public class MessageBuilder {
         return InlineKeyboardButton.builder().text(text).callbackData(data).build();
     }
 
-    public String revealText(Locale locale, Question question) {
+    public String revealText(Locale locale, Question question, OptionOrder order) {
         StringBuilder sb = new StringBuilder("<blockquote>")
                 .append(escape(question.getText())).append("</blockquote>\n\n");
-        for (int i = 0; i < OPTION_COUNT; i++) {
-            sb.append(LABELS[i]).append(". ").append(escape(question.getOptionByIndex(i)));
-            if (i == question.getCorrectOption()) {
+        for (int slot = 0; slot < OPTION_COUNT; slot++) {
+            int storageIndex = order.storageAt(slot);
+            sb.append(LABELS[slot]).append(". ").append(escape(question.getOptionByIndex(storageIndex)));
+            if (storageIndex == question.getCorrectOption()) {
                 sb.append(localizer.get(locale, "reveal.correctMark"));
             }
             sb.append("\n");
         }
         return sb.append("\n<b>").append(localizer.get(locale, "reveal.answer")).append(": ")
-                .append(LABELS[question.getCorrectOption()]).append("</b>").toString();
+                .append(LABELS[order.displayOfCorrect(question.getCorrectOption())]).append("</b>").toString();
     }
 
     public String scoreboardText(Locale locale, List<Standing> standings) {
@@ -205,10 +207,10 @@ public class MessageBuilder {
         return true;
     }
 
-    private InlineKeyboardButton button(Question question, IntFunction<String> callback, int optionIndex) {
+    private InlineKeyboardButton button(Question question, OptionOrder order, IntFunction<String> callback, int displaySlot) {
         return InlineKeyboardButton.builder()
-                .text(question.getOptionByIndex(optionIndex))
-                .callbackData(callback.apply(optionIndex))
+                .text(question.getOptionByIndex(order.storageAt(displaySlot)))
+                .callbackData(callback.apply(displaySlot))
                 .build();
     }
 
