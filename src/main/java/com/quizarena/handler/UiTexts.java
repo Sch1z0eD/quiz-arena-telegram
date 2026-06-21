@@ -21,7 +21,7 @@ public class UiTexts {
     }
 
     public String menuHome(Locale locale) {
-        return localizer.get(locale, "menu.home", brand.name());
+        return localizer.get(locale, "menu.home", Html.escape(brand.name()));
     }
 
     public String groupHint(Locale locale) {
@@ -33,11 +33,11 @@ public class UiTexts {
     }
 
     public String difficultyTitle(Locale locale, String categoryLabel) {
-        return localizer.get(locale, "menu.difficultyTitle", categoryLabel);
+        return localizer.get(locale, "menu.difficultyTitle", Html.escape(categoryLabel));
     }
 
     public String starting(Locale locale, String categoryLabel, String difficultyLabel) {
-        return localizer.get(locale, "menu.starting", categoryLabel, difficultyLabel);
+        return localizer.get(locale, "menu.starting", Html.escape(categoryLabel), Html.escape(difficultyLabel));
     }
 
     public String languageTitle(Locale locale) {
@@ -85,7 +85,7 @@ public class UiTexts {
     public String btnDuelRandom(Locale locale) { return localizer.get(locale, "btn.duelRandom"); }
     public String btnDuelInvite(Locale locale) { return localizer.get(locale, "btn.duelInvite"); }
     public String btnCancelInvite(Locale locale) { return localizer.get(locale, "btn.cancelInvite"); }
-    public String inviteShare(Locale locale, String link) { return localizer.get(locale, "invite.share", link); }
+    public String inviteShare(Locale locale, String link) { return localizer.get(locale, "invite.share", Html.escape(link)); }
 
     public String inlineDuelTitle(Locale locale) { return localizer.get(locale, "inline.duel.title"); }
     public String inlineDuelDescription(Locale locale) { return localizer.get(locale, "inline.duel.description"); }

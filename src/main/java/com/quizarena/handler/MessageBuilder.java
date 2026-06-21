@@ -91,7 +91,8 @@ public class MessageBuilder {
     }
 
     public String revealText(Locale locale, Question question) {
-        StringBuilder sb = new StringBuilder(escape(question.getText())).append("\n\n");
+        StringBuilder sb = new StringBuilder("<blockquote>")
+                .append(escape(question.getText())).append("</blockquote>\n\n");
         for (int i = 0; i < OPTION_COUNT; i++) {
             sb.append(LABELS[i]).append(". ").append(escape(question.getOptionByIndex(i)));
             if (i == question.getCorrectOption()) {
@@ -212,6 +213,6 @@ public class MessageBuilder {
     }
 
     private static String escape(String text) {
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return Html.escape(text);
     }
 }
