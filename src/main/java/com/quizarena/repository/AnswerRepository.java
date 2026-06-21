@@ -57,10 +57,51 @@ public interface AnswerRepository extends JpaRepository<AnswerRecord, Long> {
             """, nativeQuery = true)
     List<CategoryAnswerCount> topCategoriesByAnswers(@Param("limit") int limit);
 
+    @Query(value = """
+            SELECT q.category AS category, COUNT(*) AS answered,
+                   SUM(CASE WHEN a.correct THEN 1 ELSE 0 END) AS correct
+            FROM answers a JOIN questions q ON q.id = a.question_id
+            WHERE a.user_id = :userId
+            GROUP BY q.category
+            ORDER BY answered DESC
+            """, nativeQuery = true)
+    List<UserCategoryRow> userCategoryBreakdown(@Param("userId") long userId);
+
+    @Query(value = """
+            SELECT game_id AS gameId, mode AS mode, MAX(answered_at) AS finishedAt,
+                   COUNT(*) AS total, SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS correct
+            FROM answers
+            WHERE user_id = :userId
+            GROUP BY game_id, mode
+            ORDER BY finishedAt DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<UserGameRow> recentGames(@Param("userId") long userId, @Param("limit") int limit);
+
     interface DayCount {
         String getDay();
 
         long getCount();
+    }
+
+    interface UserCategoryRow {
+        String getCategory();
+
+        long getAnswered();
+
+        long getCorrect();
+    }
+
+    interface UserGameRow {
+        long getGameId();
+
+        String getMode();
+
+        long getFinishedAt();
+
+        long getTotal();
+
+        long getCorrect();
     }
 
     interface CategoryAnswerCount {
