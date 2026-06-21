@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -50,6 +51,12 @@ class MenuServiceTest {
         service.navigate(GROUP, 1, 7L, "Bob", "m:rank", EN);
         verify(menuMessenger).deleteMessage(GROUP, 1);
         verify(gameService).showRank(GROUP, 7L, "Bob", EN);
+    }
+
+    @Test
+    void groupChatCanPickQuizCategory() throws Exception {
+        service.navigate(GROUP, 1, 7L, "Bob", "m:cat:science", EN);
+        verify(menuMessenger).editDifficulties(eq(GROUP), eq(1), eq("science"), any(), eq(EN));
     }
 
     @Test

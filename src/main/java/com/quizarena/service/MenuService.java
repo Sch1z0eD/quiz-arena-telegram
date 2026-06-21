@@ -14,7 +14,10 @@ import java.util.Set;
 @Service
 public class MenuService {
 
-    private static final Set<String> GROUP_ALLOWED = Set.of("profile", "board", "rank", "lb", "rules", "menu");
+    // Reachable in a group: info cards plus the /quiz game picker. The full menu (home),
+    // duels and language stay private-only.
+    private static final Set<String> GROUP_ALLOWED =
+            Set.of("profile", "board", "rank", "lb", "rules", "menu", "play", "cat", "diff");
 
     private final GameService gameService;
     private final MenuMessenger menuMessenger;
