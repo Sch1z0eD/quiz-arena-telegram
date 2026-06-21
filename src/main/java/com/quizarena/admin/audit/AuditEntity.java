@@ -47,6 +47,10 @@ public class AuditEntity {
         return id;
     }
 
+    public Instant getTs() {
+        return ts;
+    }
+
     public long getAdminId() {
         return adminId;
     }
