@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Sch1z0eD/quiz-arena-telegram/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Sch1z0eD/quiz-arena-telegram/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-green?style=flat-square"></a>
   <img alt="Java" src="https://img.shields.io/badge/Java-21-ED8B00?style=flat-square&logo=openjdk&logoColor=white">
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?style=flat-square&logo=springboot&logoColor=white">
@@ -33,6 +34,16 @@ Type `/start` to begin; everything after that runs through inline menu buttons. 
 
 ## How it works
 
+```mermaid
+flowchart LR
+    TG([Telegram]) <-->|long polling| BOT([Bot])
+    BOT --> SVC["Services: game, duels, matchmaking, ELO"]
+    SVC --> PG[("PostgreSQL: questions, answers, rating")]
+    SVC --> RD[("Redis: timers, queue, Lua")]
+    SVC --> CARD["SVG cards to PNG (Batik)"]
+    CARD --> BOT
+```
+
 A few decisions everything rests on:
 
 - **Virtual threads.** Each Telegram update is handled on its own Java 21 virtual thread, so one slow player doesn't block everyone else.
@@ -55,33 +66,40 @@ A few decisions everything rests on:
 
 ## Running it
 
-You'll need JDK 21, Docker (for Postgres and Redis), and a bot token from [@BotFather](https://t.me/BotFather).
+All you need is Docker and a bot token from [@BotFather](https://t.me/BotFather). For inline mode (challenging someone from any chat), enable it with @BotFather's `/setinline` and set a placeholder.
 
-1. Start the database and Redis:
+### One command (Docker Compose)
 
-   ```bash
-   docker compose up -d
-   ```
+Brings up the app, Postgres, and Redis; migrations run automatically on startup.
 
-2. Create a bot with @BotFather and grab the token. If you want inline mode (challenging someone from any chat), enable it with `/setinline` and set a placeholder.
+```bash
+cp .env.example .env       # set your BOT_TOKEN
+docker compose up
+```
 
-3. Run the app, passing the token through an environment variable.
+### For development (run from your IDE or Gradle)
 
-   Linux / macOS:
+You'll need JDK 21. Keep the infrastructure in Docker and run the app locally:
 
-   ```bash
-   export BOT_TOKEN="your-token-here"
-   ./gradlew bootRun
-   ```
+```bash
+docker compose up -d postgres redis
+```
 
-   Windows (PowerShell):
+Linux / macOS:
 
-   ```powershell
-   $env:BOT_TOKEN="your-token-here"
-   .\gradlew.bat bootRun
-   ```
+```bash
+export BOT_TOKEN="your-token-here"
+./gradlew bootRun
+```
 
-Postgres and Redis connection settings live in `application.yml` and default to what `docker-compose` provides; override them with environment variables if needed.
+Windows (PowerShell):
+
+```powershell
+$env:BOT_TOKEN="your-token-here"
+.\gradlew.bat bootRun
+```
+
+Postgres and Redis connection settings live in `application.properties`: the host and port come from `DB_HOST`/`DB_PORT`/`REDIS_HOST`/`REDIS_PORT` (defaulting to `localhost`), and Compose points them at the service names `postgres`/`redis`.
 
 Russian questions ship in the migrations and load on first startup. English questions can be imported once from [Open Trivia DB](https://opentdb.com/) by running the app with `IMPORT_ENABLED=true`. The import is idempotent — running it again won't create duplicates.
 

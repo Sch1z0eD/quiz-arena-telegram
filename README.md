@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Sch1z0eD/quiz-arena-telegram/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Sch1z0eD/quiz-arena-telegram/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-green?style=flat-square"></a>
   <img alt="Java" src="https://img.shields.io/badge/Java-21-ED8B00?style=flat-square&logo=openjdk&logoColor=white">
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?style=flat-square&logo=springboot&logoColor=white">
@@ -33,6 +34,16 @@
 
 ## Как устроено
 
+```mermaid
+flowchart LR
+    TG([Telegram]) <-->|long polling| BOT([Бот])
+    BOT --> SVC["Сервисы: игра, дуэли, подбор, ELO"]
+    SVC --> PG[("PostgreSQL: вопросы, ответы, рейтинг")]
+    SVC --> RD[("Redis: таймеры, очередь, Lua")]
+    SVC --> CARD["Карточки SVG в PNG (Batik)"]
+    CARD --> BOT
+```
+
 Несколько решений, на которых всё держится:
 
 - **Виртуальные потоки.** Каждый апдейт от Telegram обрабатывается в отдельном виртуальном потоке Java 21 — медленный ответ одного игрока не блокирует остальных.
@@ -55,33 +66,40 @@
 
 ## Запуск
 
-Понадобится JDK 21, Docker (для Postgres и Redis) и токен бота от [@BotFather](https://t.me/BotFather).
+Нужен только Docker и токен бота от [@BotFather](https://t.me/BotFather). Для inline-режима (вызов на дуэль из любого чата) включи его у @BotFather командой `/setinline` и задай плейсхолдер.
 
-1. Подними базу и Redis:
+### Одной командой (Docker Compose)
 
-   ```bash
-   docker compose up -d
-   ```
+Поднимает приложение, Postgres и Redis; миграции применяются сами на старте.
 
-2. Создай бота у @BotFather и забери токен. Если нужен inline-режим (вызов на дуэль из любого чата) — включи его командой `/setinline` и задай плейсхолдер.
+```bash
+cp .env.example .env       # впиши свой BOT_TOKEN
+docker compose up
+```
 
-3. Запусти приложение, передав токен через переменную окружения.
+### Для разработки (запуск из IDE или Gradle)
 
-   Linux / macOS:
+Понадобится JDK 21. Инфраструктуру держим в Docker, приложение запускаем локально:
 
-   ```bash
-   export BOT_TOKEN="сюда-токен"
-   ./gradlew bootRun
-   ```
+```bash
+docker compose up -d postgres redis
+```
 
-   Windows (PowerShell):
+Linux / macOS:
 
-   ```powershell
-   $env:BOT_TOKEN="сюда-токен"
-   .\gradlew.bat bootRun
-   ```
+```bash
+export BOT_TOKEN="сюда-токен"
+./gradlew bootRun
+```
 
-Настройки подключения к Postgres и Redis лежат в `application.yml` и по умолчанию совпадают с `docker-compose`; при необходимости перекрываются переменными окружения.
+Windows (PowerShell):
+
+```powershell
+$env:BOT_TOKEN="сюда-токен"
+.\gradlew.bat bootRun
+```
+
+Настройки подключения к Postgres и Redis — в `application.properties`: хост и порт берутся из переменных `DB_HOST`/`DB_PORT`/`REDIS_HOST`/`REDIS_PORT` (по умолчанию `localhost`), а в Compose выставлены на имена сервисов `postgres`/`redis`.
 
 Вопросы на русском уже идут в миграциях и подгружаются при первом старте. Английские вопросы можно один раз импортировать из [Open Trivia DB](https://opentdb.com/) — запусти приложение с `IMPORT_ENABLED=true`. Импорт идемпотентный: повторный запуск дубли не создаёт.
 
