@@ -44,3 +44,7 @@ Thumbs.db
 
 ### Project rules - local only ###
 CLAUDE.md
+
+### Local secrets - real deploy config (BOT_TOKEN). Keep .env.example tracked. ###
+.env
+!.env.example

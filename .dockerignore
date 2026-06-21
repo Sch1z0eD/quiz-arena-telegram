@@ -1,0 +1,19 @@
+# Build output and caches
+build/
+.gradle/
+out/
+bin/
+
+# VCS and IDE
+.git/
+.github/
+.idea/
+*.iml
+
+# Docs and local/secret config (not needed in the image)
+*.md
+.env
+.env.example
+
+# Logs
+*.log
