@@ -9,9 +9,12 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class MenuService {
+
+    private static final Set<String> GROUP_ALLOWED = Set.of("profile", "board", "rank", "lb", "rules", "menu");
 
     private final GameService gameService;
     private final MenuMessenger menuMessenger;
@@ -55,6 +58,9 @@ public class MenuService {
             throws TelegramApiException {
         String[] parts = data.split(":");
         String screen = parts.length > 1 ? parts[1] : "";
+        if (chatId < 0 && !GROUP_ALLOWED.contains(screen)) {
+            return texts.privateOnly(locale);
+        }
         switch (screen) {
             case "home" -> menuMessenger.editMainMenu(chatId, messageId, locale);
             case "play" -> menuMessenger.editCategories(chatId, messageId,

@@ -18,9 +18,10 @@ public class RankCardRenderer {
         this.localizer = localizer;
     }
 
-    public byte[] render(String name, PersonalRank group, PersonalRank global, Locale locale) {
+    public byte[] render(String name, PersonalRank group, PersonalRank global, byte[] avatar, Locale locale) {
+        String template = svg.loadTemplate("rank_card.svg")
+                .replace("{{AVATAR}}", svg.avatarSlot(avatar, svg.initials(name), 78, 150, 40, "rank"));
         Map<String, String> values = Map.ofEntries(
-                Map.entry("INITIALS", svg.initials(name)),
                 Map.entry("NAME", name),
                 Map.entry("RANKLINE", group == null
                         ? localizer.get(locale, "card.ranklineNew")
@@ -32,6 +33,6 @@ public class RankCardRenderer {
                 Map.entry("LABEL_RANK_TITLE", localizer.get(locale, "card.rankTitle")),
                 Map.entry("LABEL_PLACE", localizer.get(locale, "card.globalPlace")),
                 Map.entry("LABEL_POINTS", localizer.get(locale, "card.totalPoints")));
-        return svg.rasterize(svg.fill(svg.loadTemplate("rank_card.svg"), values));
+        return svg.rasterize(svg.fill(template, values));
     }
 }

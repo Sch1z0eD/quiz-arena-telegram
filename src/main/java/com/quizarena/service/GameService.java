@@ -171,7 +171,7 @@ public class GameService {
     public void showRank(long chatId, long userId, String name, Locale locale) {
         PersonalRank group = store.personal(TopScope.GROUP, chatId, userId);
         PersonalRank global = store.personal(TopScope.GLOBAL, chatId, userId);
-        messenger.sendRankCard(chatId, name, group, global, eloService.rating(userId), locale);
+        messenger.sendRankCard(chatId, name, group, global, eloService.rating(userId), avatarService.get(userId), locale);
     }
 
     public TopData topData(TopScope scope, long chatId, long userId) {

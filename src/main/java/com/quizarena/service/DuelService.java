@@ -135,6 +135,9 @@ public class DuelService {
 
     public boolean acceptInvite(String token, long friendUser, long friendChat, String friendName, Locale friendLocale)
             throws TelegramApiException {
+        if (friendChat < 0) {
+            return false; // duels are private-only; the caller falls back to the group hint
+        }
         Optional<DuelInvite> claimed = inviteStore.claim(token);
         if (claimed.isEmpty()) {
             messenger.notify(friendChat, localizer.get(friendLocale, "invite.invalid"));

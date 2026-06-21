@@ -88,15 +88,15 @@ class CardRenderersTest {
     }
 
     @Test
-    void rendersRankCard() {
+    void rendersRankCard() throws Exception {
         byte[] png = new RankCardRenderer(svg, localizer)
-                .render("Иван", new PersonalRank(800, 3), new PersonalRank(1234, 42), RU);
+                .render("Иван", new PersonalRank(800, 3), new PersonalRank(1234, 42), samplePng(), RU);
         assertPng(png);
     }
 
     @Test
     void rendersRankCardForNewcomer() {
-        byte[] png = new RankCardRenderer(svg, localizer).render("Bob", null, null, EN);
+        byte[] png = new RankCardRenderer(svg, localizer).render("Bob", null, null, null, EN);
         assertPng(png);
     }
 

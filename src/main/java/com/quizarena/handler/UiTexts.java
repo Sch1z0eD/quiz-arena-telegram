@@ -28,6 +28,10 @@ public class UiTexts {
         return localizer.get(locale, "menu.groupHint");
     }
 
+    public String privateOnly(Locale locale) {
+        return localizer.get(locale, "menu.privateOnly");
+    }
+
     public String categoriesTitle(Locale locale) {
         return localizer.get(locale, "menu.categoriesTitle");
     }

@@ -95,11 +95,13 @@ public class GameMessenger {
                 .chatId(chatId).text(messageBuilder.rankText(locale, group, global, elo)).parseMode("HTML").build());
     }
 
-    public void sendRankCard(long chatId, String name, PersonalRank group, PersonalRank global, int elo, Locale locale) {
+    public void sendRankCard(long chatId, String name, PersonalRank group, PersonalRank global, int elo,
+                             byte[] avatar, Locale locale) {
         Thread.ofVirtual().name("rank-card").start(() -> {
             try {
-                sendPhoto(chatId, rankCardRenderer.render(name, group, global, locale),
-                        messageBuilder.eloCaption(locale, elo), messageBuilder.rankNavKeyboard(locale));
+                sendPhoto(chatId, rankCardRenderer.render(name, group, global, avatar, locale),
+                        messageBuilder.eloCaption(locale, elo),
+                        chatId > 0 ? messageBuilder.rankNavKeyboard(locale) : null);
             } catch (Exception e) {
                 log.warn("Rank card failed in chat {}, falling back to text", chatId, e);
                 try {
