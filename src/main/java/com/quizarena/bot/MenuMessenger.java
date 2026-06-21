@@ -267,7 +267,8 @@ public class MenuMessenger {
                         button(texts.scopeLabel(TopScope.GROUP, locale), "m:lb:GROUP"),
                         button(texts.scopeLabel(TopScope.WEEK, locale), "m:lb:WEEK"),
                         button(texts.scopeLabel(TopScope.GLOBAL, locale), "m:lb:GLOBAL")),
-                new InlineKeyboardRow(button(texts.btnBack(locale), "m:menu")))).build();
+                new InlineKeyboardRow(button(texts.btnRank(locale), "m:rank"),
+                        button(texts.btnBack(locale), "m:menu")))).build();
     }
 
     private InlineKeyboardMarkup languageMarkup(Locale locale) {

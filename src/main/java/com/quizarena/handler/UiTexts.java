@@ -74,6 +74,7 @@ public class UiTexts {
     public String btnAnyCategory(Locale locale) { return localizer.get(locale, "btn.anyCategory"); }
     public String btnAnyDifficulty(Locale locale) { return localizer.get(locale, "btn.anyDifficulty"); }
     public String btnCancelSearch(Locale locale) { return localizer.get(locale, "btn.cancelSearch"); }
+    public String btnRank(Locale locale) { return localizer.get(locale, "btn.rank"); }
 
     public String duelSearching(Locale locale) { return localizer.get(locale, "duel.searching"); }
     public String duelSearchFound(Locale locale) { return localizer.get(locale, "duel.searchFound"); }

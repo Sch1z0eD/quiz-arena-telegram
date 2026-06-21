@@ -78,6 +78,18 @@ public class MessageBuilder {
                 .build();
     }
 
+    public InlineKeyboardMarkup rankNavKeyboard(Locale locale) {
+        return InlineKeyboardMarkup.builder()
+                .keyboardRow(new InlineKeyboardRow(
+                        navButton(localizer.get(locale, "btn.mainMenu"), "m:home"),
+                        navButton(localizer.get(locale, "btn.profile"), "m:profile")))
+                .build();
+    }
+
+    private static InlineKeyboardButton navButton(String text, String data) {
+        return InlineKeyboardButton.builder().text(text).callbackData(data).build();
+    }
+
     public String revealText(Locale locale, Question question) {
         StringBuilder sb = new StringBuilder(escape(question.getText())).append("\n\n");
         for (int i = 0; i < OPTION_COUNT; i++) {

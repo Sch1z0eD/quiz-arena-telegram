@@ -99,7 +99,7 @@ public class GameMessenger {
         Thread.ofVirtual().name("rank-card").start(() -> {
             try {
                 sendPhoto(chatId, rankCardRenderer.render(name, group, global, locale),
-                        messageBuilder.eloCaption(locale, elo));
+                        messageBuilder.eloCaption(locale, elo), messageBuilder.rankNavKeyboard(locale));
             } catch (Exception e) {
                 log.warn("Rank card failed in chat {}, falling back to text", chatId, e);
                 try {
@@ -152,6 +152,13 @@ public class GameMessenger {
                 ? SendPhoto.builder().chatId(chatId).photo(photo).build()
                 : SendPhoto.builder().chatId(chatId).photo(photo).caption(caption).parseMode("HTML").build();
         telegramClient.execute(message);
+    }
+
+    private void sendPhoto(long chatId, byte[] png, String caption, InlineKeyboardMarkup markup)
+            throws TelegramApiException {
+        telegramClient.execute(SendPhoto.builder().chatId(chatId)
+                .photo(new InputFile(new ByteArrayInputStream(png), "card.png"))
+                .caption(caption).parseMode("HTML").replyMarkup(markup).build());
     }
 
     private void editPlain(long chatId, int messageId, String text) throws TelegramApiException {

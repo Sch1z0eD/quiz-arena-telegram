@@ -77,6 +77,10 @@ public class MenuService {
                 menuMessenger.deleteMessage(chatId, messageId);
                 openLeaderboard(chatId, TopScope.GROUP, userId, locale);
             }
+            case "rank" -> {
+                menuMessenger.deleteMessage(chatId, messageId);
+                gameService.showRank(chatId, userId, name, locale);
+            }
             case "menu" -> {
                 menuMessenger.deleteMessage(chatId, messageId);
                 if (chatId > 0) {
