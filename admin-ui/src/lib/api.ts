@@ -37,6 +37,33 @@ export interface Overview {
   totalAnswers: number;
 }
 
+export interface UserRow {
+  id: number;
+  name: string | null;
+  username: string | null;
+  language: string | null;
+  games: number;
+  accuracyPercent: number | null;
+  elo: number;
+  firstSeen: number;
+  lastSeen: number;
+  banned: boolean;
+  blocked: boolean;
+}
+
+export interface UserDetail {
+  summary: UserRow;
+  categories: { category: string; answered: number; accuracyPercent: number | null }[];
+  recentGames: { gameId: number; mode: string; finishedAt: number; correct: number; total: number }[];
+  duel: { played: number; wins: number; draws: number; losses: number };
+}
+
+export interface UserQuery {
+  q?: string;
+  page?: number;
+  size?: number;
+}
+
 export interface CategoryAnswerDistribution {
   category: string;
   a: number;
@@ -248,6 +275,16 @@ export const api = {
   listAudit: (query: AuditQuery): Promise<PageResponse<AuditEntry>> =>
     request<PageResponse<AuditEntry>>(`/audit?${auditQuery(query)}`),
   listAuditActions: (): Promise<string[]> => request<string[]>("/audit/actions"),
+  listUsers: (query: UserQuery): Promise<PageResponse<UserRow>> => {
+    const params = new URLSearchParams();
+    if (query.q) {
+      params.set("q", query.q);
+    }
+    params.set("page", String(query.page ?? 0));
+    params.set("size", String(query.size ?? 20));
+    return request<PageResponse<UserRow>>(`/users?${params.toString()}`);
+  },
+  getUser: (id: number): Promise<UserDetail> => request<UserDetail>(`/users/${id}`),
   listCategories: (): Promise<CategoryRow[]> => request<CategoryRow[]>("/categories"),
   createCategory: (names: Record<string, string>, active: boolean): Promise<CategoryRow> =>
     request<CategoryRow>("/categories", {

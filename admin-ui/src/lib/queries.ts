@@ -20,6 +20,9 @@ import {
   type QuestionQuery,
   type QuestionSummary,
   type Stats,
+  type UserDetail,
+  type UserQuery,
+  type UserRow,
 } from "@/lib/api";
 
 export function useMe(): UseQueryResult<Me> {
@@ -36,6 +39,23 @@ export function useOverview(): UseQueryResult<Overview> {
 
 export function useAnswerDistribution(): UseQueryResult<CategoryAnswerDistribution[]> {
   return useQuery({ queryKey: ["answer-distribution"], queryFn: api.answerDistribution });
+}
+
+export function useUsers(query: UserQuery): UseQueryResult<PageResponse<UserRow>> {
+  return useQuery({
+    queryKey: ["users", query],
+    queryFn: () => api.listUsers(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useUser(id: number | null): UseQueryResult<UserDetail> {
+  return useQuery({
+    queryKey: ["user", id],
+    queryFn: () => api.getUser(id as number),
+    enabled: id !== null,
+    retry: false,
+  });
 }
 
 export function useQuestions(query: QuestionQuery): UseQueryResult<PageResponse<QuestionSummary>> {

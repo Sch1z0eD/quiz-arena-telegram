@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, ListChecks, LogOut, ScrollText, Tags } from "lucide-react";
+import { LayoutDashboard, ListChecks, LogOut, ScrollText, Tags, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { useMe } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/questions", label: "Questions", icon: ListChecks, end: false },
   { to: "/categories", label: "Categories", icon: Tags, end: false },
+  { to: "/users", label: "Users", icon: Users, end: false },
   { to: "/audit", label: "Audit", icon: ScrollText, end: false },
 ];
 
