@@ -1,0 +1,13 @@
+<svg width="680" height="300" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+  <rect x="0" y="0" width="680" height="300" rx="22" fill="#14182e"/>
+  <circle cx="615" cy="44" r="120" fill="#6c5ce7" opacity="0.12"/>
+  <circle cx="70" cy="266" r="104" fill="#13d6c0" opacity="0.10"/>
+  <rect x="4" y="4" width="672" height="292" rx="19" fill="none" stroke="#2a3056" stroke-width="1.5"/>
+  <text x="36" y="52" fill="#13d6c0" font-size="22" font-weight="700" letter-spacing="5">{{BRAND}}</text>
+  <circle cx="255" cy="150" r="10" fill="#6c5ce7"/>
+  <rect x="280" y="140" width="162" height="20" rx="10" fill="#1c2140"/>
+  <circle cx="255" cy="188" r="10" fill="#13d6c0"/>
+  <rect x="280" y="178" width="128" height="20" rx="10" fill="#1c2140"/>
+  <circle cx="255" cy="226" r="10" fill="#aeb4d6"/>
+  <rect x="280" y="216" width="146" height="20" rx="10" fill="#1c2140"/>
+</svg>

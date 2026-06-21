@@ -83,6 +83,7 @@ class CardRenderersTest {
             assertPng(banners.render("welcome_banner.svg", locale));
             assertPng(banners.render("game_banner.svg", locale));
             assertPng(banners.render("duel_banner.svg", locale));
+            assertPng(banners.render("rules_banner.svg", locale));
         }
     }
 

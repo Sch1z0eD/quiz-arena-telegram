@@ -38,6 +38,8 @@ public class MenuMessenger {
     private static final String WELCOME = "welcome_banner.svg";
     private static final String GAME = "game_banner.svg";
     private static final String DUEL = "duel_banner.svg";
+    private static final String RULES = "rules_banner.svg";
+    private static final int CAPTION_LIMIT = 1024;
 
     private final TelegramClient telegramClient;
     private final UiTexts texts;
@@ -102,9 +104,16 @@ public class MenuMessenger {
     }
 
     public void sendRules(long chatId, Locale locale) throws TelegramApiException {
+        String rules = texts.rules(locale);
+        if (rules.length() <= CAPTION_LIMIT) {
+            telegramClient.execute(SendPhoto.builder().chatId(chatId)
+                    .photo(photo(bannerRenderer.render(RULES, locale)))
+                    .caption(rules).parseMode("HTML").replyMarkup(backToMenuMarkup(locale)).build());
+            return;
+        }
+        log.warn("Rules text {} chars exceeds caption limit, sending as plain text in chat {}", rules.length(), chatId);
         telegramClient.execute(SendMessage.builder()
-                .chatId(chatId).text(texts.rules(locale)).replyMarkup(backToMenuMarkup(locale))
-                .parseMode("HTML").build());
+                .chatId(chatId).text(rules).replyMarkup(backToMenuMarkup(locale)).parseMode("HTML").build());
     }
 
     public void editDuelCategories(long chatId, int messageId, List<Category> available, boolean privateChat, Locale locale)
