@@ -28,6 +28,7 @@ public class ProfileCardRenderer {
                         : localizer.get(locale, "card.rankline", profile.place())),
                 Map.entry("GAMES", Long.toString(profile.games())),
                 Map.entry("POINTS", Long.toString(profile.points())),
+                Map.entry("ELO", Integer.toString(profile.elo())),
                 Map.entry("ACCURACY", profile.accuracyPercent() + "%"),
                 Map.entry("RANK", profile.place() == null
                         ? localizer.get(locale, "card.rankNone")

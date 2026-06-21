@@ -9,12 +9,15 @@
   {{AVATAR}}
   <text x="138" y="142" fill="#ffffff" font-size="30" font-weight="700">{{NAME}}</text>
   <text x="138" y="176" fill="#8b91b8" font-size="18">{{RANKLINE}}</text>
-  <rect x="36" y="230" width="300" height="80" rx="14" fill="#1c2140"/>
+  <rect x="36" y="230" width="193" height="80" rx="14" fill="#1c2140"/>
   <text x="58" y="262" fill="#8b91b8" font-size="17">{{LABEL_GAMES}}</text>
   <text x="58" y="298" fill="#ffffff" font-size="26" font-weight="700">{{GAMES}}</text>
-  <rect x="344" y="230" width="300" height="80" rx="14" fill="#1c2140"/>
-  <text x="366" y="262" fill="#8b91b8" font-size="17">{{LABEL_POINTS}}</text>
-  <text x="366" y="298" fill="#13d6c0" font-size="26" font-weight="700">{{POINTS}}</text>
+  <rect x="243" y="230" width="193" height="80" rx="14" fill="#1c2140"/>
+  <text x="265" y="262" fill="#8b91b8" font-size="17">{{LABEL_POINTS}}</text>
+  <text x="265" y="298" fill="#13d6c0" font-size="26" font-weight="700">{{POINTS}}</text>
+  <rect x="450" y="230" width="193" height="80" rx="14" fill="#1c2140"/>
+  <text x="472" y="262" fill="#8b91b8" font-size="17">ELO</text>
+  <text x="472" y="298" fill="#13d6c0" font-size="26" font-weight="700">{{ELO}}</text>
   <rect x="36" y="326" width="300" height="80" rx="14" fill="#1c2140"/>
   <text x="58" y="358" fill="#8b91b8" font-size="17">{{LABEL_ACCURACY}}</text>
   <text x="58" y="394" fill="#ffffff" font-size="26" font-weight="700">{{ACCURACY}}</text>
