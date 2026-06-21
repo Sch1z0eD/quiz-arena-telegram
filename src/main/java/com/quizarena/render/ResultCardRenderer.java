@@ -1,6 +1,7 @@
 package com.quizarena.render;
 
 import com.quizarena.i18n.Localizer;
+import com.quizarena.service.CategoryService;
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
@@ -11,10 +12,12 @@ public class ResultCardRenderer {
 
     private final SvgCardRenderer svg;
     private final Localizer localizer;
+    private final CategoryService categoryService;
 
-    public ResultCardRenderer(SvgCardRenderer svg, Localizer localizer) {
+    public ResultCardRenderer(SvgCardRenderer svg, Localizer localizer, CategoryService categoryService) {
         this.svg = svg;
         this.localizer = localizer;
+        this.categoryService = categoryService;
     }
 
     public byte[] render(String categorySlug, String name, long score, int accuracyPercent, long correct,
@@ -38,6 +41,8 @@ public class ResultCardRenderer {
     }
 
     private String categoryLabel(String slug, Locale locale) {
-        return localizer.get(locale, slug == null || slug.isEmpty() ? "category.any" : "category." + slug);
+        return slug == null || slug.isEmpty()
+                ? localizer.get(locale, "category.any")
+                : categoryService.name(slug, locale);
     }
 }

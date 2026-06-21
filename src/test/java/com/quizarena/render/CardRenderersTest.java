@@ -8,7 +8,10 @@ import com.quizarena.domain.Standing;
 import com.quizarena.domain.TopScope;
 import com.quizarena.i18n.Localizer;
 import com.quizarena.i18n.Plurals;
+import com.quizarena.service.CategoryService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 
 import javax.imageio.ImageIO;
@@ -17,9 +20,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 class CardRenderersTest {
 
@@ -28,16 +38,24 @@ class CardRenderersTest {
 
     private final SvgCardRenderer svg = new SvgCardRenderer(new BrandProperties("QUIZARENA", "@QuizArenaBot"));
     private final Localizer localizer = new Localizer(messageSource(), new Plurals());
+    private final CategoryService categoryService = mock(CategoryService.class);
+
+    @BeforeEach
+    void stubCategoryNames() {
+        when(categoryService.name(anyString(), any())).thenAnswer(invocation -> invocation.getArgument(0));
+    }
 
     @Test
     void rendersResultCard() {
-        byte[] png = new ResultCardRenderer(svg, localizer).render("computers", "Иван", 320, 85, 17, 3L, null, RU);
+        byte[] png = new ResultCardRenderer(svg, localizer, categoryService)
+                .render("computers", "Иван", 320, 85, 17, 3L, null, RU);
         assertPng(png);
     }
 
     @Test
     void cornerIsOpaqueCardColourNotWhite() throws Exception {
-        byte[] png = new ResultCardRenderer(svg, localizer).render("computers", "Иван", 320, 85, 17, 3L, null, RU);
+        byte[] png = new ResultCardRenderer(svg, localizer, categoryService)
+                .render("computers", "Иван", 320, 85, 17, 3L, null, RU);
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(png));
         int argb = image.getRGB(1, 1);
         assertEquals(0xFF, (argb >>> 24) & 0xFF, "corner must be opaque");
@@ -66,7 +84,7 @@ class CardRenderersTest {
         DuelResult result = new DuelResult("science",
                 "Александр Длинноеимякотороеточноневлезетвпанель", 320,
                 "Боб", 150, DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, null, null);
-        byte[] png = new DuelResultCardRenderer(svg, localizer).render(result, RU);
+        byte[] png = new DuelResultCardRenderer(svg, localizer, categoryService).render(result, RU);
         assertPng(png);
     }
 
@@ -107,26 +125,54 @@ class CardRenderersTest {
         assertPng(png);
     }
 
-    private static ResourceBundleMessageSource messageSource() {
-        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
-        source.setBasename("messages");
-        source.setDefaultEncoding("UTF-8");
-        return source;
-    }
-
     @Test
     void rendersDuelCardWithAvatars() throws Exception {
         byte[] avatar = samplePng();
         DuelResult result = new DuelResult("science", "Иван", 320, "Боб", 150,
                 DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, avatar, avatar);
-        assertPng(new DuelResultCardRenderer(svg, localizer).render(result, RU));
+        assertPng(new DuelResultCardRenderer(svg, localizer, categoryService).render(result, RU));
     }
 
     @Test
     void rendersResultCardWithAvatar() throws Exception {
-        byte[] png = new ResultCardRenderer(svg, localizer)
+        byte[] png = new ResultCardRenderer(svg, localizer, categoryService)
                 .render("computers", "Иван", 320, 85, 17, 3L, samplePng(), RU);
         assertPng(png);
+    }
+
+    @Test
+    void categoryNameFromDbRendersOnResultCard() {
+        when(categoryService.name("computers", RU)).thenReturn("Компьютеры-из-БД");
+        assertSvgContains(
+                spy -> new ResultCardRenderer(spy, localizer, categoryService)
+                        .render("computers", "Иван", 320, 85, 17, 3L, null, RU),
+                "Компьютеры-из-БД");
+    }
+
+    @Test
+    void categoryNameFromDbRendersOnDuelResultCard() {
+        when(categoryService.name("science", RU)).thenReturn("Наука-из-БД");
+        DuelResult result = new DuelResult("science", "Иван", 320, "Боб", 150,
+                DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, null, null);
+        assertSvgContains(
+                spy -> new DuelResultCardRenderer(spy, localizer, categoryService).render(result, RU),
+                "Наука-из-БД");
+    }
+
+    // Render through a spy that captures the filled SVG (skipping rasterization) and assert the text is present.
+    private void assertSvgContains(Consumer<SvgCardRenderer> render, String expected) {
+        SvgCardRenderer spy = spy(svg);
+        ArgumentCaptor<String> renderedSvg = ArgumentCaptor.forClass(String.class);
+        doReturn(new byte[]{(byte) 0x89, (byte) 0x50}).when(spy).rasterize(renderedSvg.capture());
+        render.accept(spy);
+        assertTrue(renderedSvg.getValue().contains(expected), "SVG should contain the DB category name");
+    }
+
+    private static ResourceBundleMessageSource messageSource() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasename("messages");
+        source.setDefaultEncoding("UTF-8");
+        return source;
     }
 
     private static byte[] samplePng() throws Exception {

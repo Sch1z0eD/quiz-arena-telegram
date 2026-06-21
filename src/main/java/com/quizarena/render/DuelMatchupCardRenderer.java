@@ -2,6 +2,7 @@ package com.quizarena.render;
 
 import com.quizarena.domain.Matchup;
 import com.quizarena.i18n.Localizer;
+import com.quizarena.service.CategoryService;
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
@@ -15,10 +16,12 @@ public class DuelMatchupCardRenderer {
 
     private final SvgCardRenderer svg;
     private final Localizer localizer;
+    private final CategoryService categoryService;
 
-    public DuelMatchupCardRenderer(SvgCardRenderer svg, Localizer localizer) {
+    public DuelMatchupCardRenderer(SvgCardRenderer svg, Localizer localizer, CategoryService categoryService) {
         this.svg = svg;
         this.localizer = localizer;
+        this.categoryService = categoryService;
     }
 
     public byte[] render(Matchup matchup, Locale locale) {
@@ -40,7 +43,9 @@ public class DuelMatchupCardRenderer {
     }
 
     private String categoryLabel(String slug, Locale locale) {
-        return localizer.get(locale, slug == null || slug.isEmpty() ? "category.any" : "category." + slug);
+        return slug == null || slug.isEmpty()
+                ? localizer.get(locale, "category.any")
+                : categoryService.name(slug, locale);
     }
 
     private String difficultyLabel(String value, Locale locale) {

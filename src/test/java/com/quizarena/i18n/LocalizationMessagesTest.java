@@ -33,7 +33,7 @@ class LocalizationMessagesTest {
                 "menu.home", "menu.categoriesTitle", "menu.languageTitle", "lobby.joinButton",
                 "question.title", "reveal.answer", "scoreboard.title", "rank.title",
                 "duel.searching", "rules.text", "profile.text", "error.generic",
-                "btn.play", "btn.language", "category.science", "difficulty.easy",
+                "btn.play", "btn.language", "difficulty.easy",
                 "scope.GROUP", "card.score", "card.duelFinished", "lang.ru",
                 "inline.duel.title", "inline.duel.message", "inline.duel.button",
                 "inline.play.title", "inline.play.message", "duel.opponentUnavailable",

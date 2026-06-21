@@ -10,6 +10,7 @@ import com.quizarena.handler.UiTexts;
 import com.quizarena.render.BannerRenderer;
 import com.quizarena.render.LeaderboardCardRenderer;
 import com.quizarena.render.ProfileCardRenderer;
+import com.quizarena.service.CategoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -47,16 +48,18 @@ public class MenuMessenger {
     private final BannerRenderer bannerRenderer;
     private final ProfileCardRenderer profileCardRenderer;
     private final LeaderboardCardRenderer leaderboardCardRenderer;
+    private final CategoryService categoryService;
 
     public MenuMessenger(TelegramClient telegramClient, UiTexts texts, MessageBuilder messageBuilder,
                          BannerRenderer bannerRenderer, ProfileCardRenderer profileCardRenderer,
-                         LeaderboardCardRenderer leaderboardCardRenderer) {
+                         LeaderboardCardRenderer leaderboardCardRenderer, CategoryService categoryService) {
         this.telegramClient = telegramClient;
         this.texts = texts;
         this.messageBuilder = messageBuilder;
         this.bannerRenderer = bannerRenderer;
         this.profileCardRenderer = profileCardRenderer;
         this.leaderboardCardRenderer = leaderboardCardRenderer;
+        this.categoryService = categoryService;
     }
 
     public void sendMainMenu(long chatId, Locale locale) throws TelegramApiException {
@@ -248,9 +251,10 @@ public class MenuMessenger {
         List<InlineKeyboardRow> rows = new ArrayList<>();
         for (int i = 0; i < available.size(); i += 2) {
             InlineKeyboardRow row = new InlineKeyboardRow();
-            row.add(button(texts.categoryLabel(available.get(i), locale), prefix + ":" + available.get(i).slug()));
+            row.add(button(categoryService.name(available.get(i).slug(), locale), prefix + ":" + available.get(i).slug()));
             if (i + 1 < available.size()) {
-                row.add(button(texts.categoryLabel(available.get(i + 1), locale), prefix + ":" + available.get(i + 1).slug()));
+                row.add(button(categoryService.name(available.get(i + 1).slug(), locale),
+                        prefix + ":" + available.get(i + 1).slug()));
             }
             rows.add(row);
         }

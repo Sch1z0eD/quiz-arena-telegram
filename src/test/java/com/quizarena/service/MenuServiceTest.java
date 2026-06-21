@@ -28,7 +28,7 @@ class MenuServiceTest {
     private final UiTexts texts = mock(UiTexts.class);
     private final DuelService duelService = mock(DuelService.class);
     private final MenuService service = new MenuService(gameService, menuMessenger, texts, duelService,
-            mock(LocaleService.class), mock(AvatarService.class));
+            mock(LocaleService.class), mock(AvatarService.class), mock(CategoryService.class));
 
     @Test
     void groupChatCannotStartDuelSearch() throws Exception {

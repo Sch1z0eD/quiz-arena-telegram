@@ -1,7 +1,6 @@
 package com.quizarena.service;
 
 import com.quizarena.bot.MenuMessenger;
-import com.quizarena.domain.Category;
 import com.quizarena.domain.TopScope;
 import com.quizarena.handler.UiTexts;
 import org.springframework.stereotype.Service;
@@ -25,15 +24,17 @@ public class MenuService {
     private final DuelService duelService;
     private final LocaleService localeService;
     private final AvatarService avatarService;
+    private final CategoryService categoryService;
 
     public MenuService(GameService gameService, MenuMessenger menuMessenger, UiTexts texts, DuelService duelService,
-                       LocaleService localeService, AvatarService avatarService) {
+                       LocaleService localeService, AvatarService avatarService, CategoryService categoryService) {
         this.gameService = gameService;
         this.menuMessenger = menuMessenger;
         this.texts = texts;
         this.duelService = duelService;
         this.localeService = localeService;
         this.avatarService = avatarService;
+        this.categoryService = categoryService;
     }
 
     public void openMenu(long chatId, boolean privateChat, Locale locale) throws TelegramApiException {
@@ -173,8 +174,7 @@ public class MenuService {
         if ("any".equals(slug)) {
             return texts.btnAnyCategory(locale);
         }
-        Category category = Category.fromSlug(slug);
-        return category == null ? slug : texts.categoryLabel(category, locale);
+        return categoryService.name(slug, locale);
     }
 
     private static TopScope parseScope(String value) {

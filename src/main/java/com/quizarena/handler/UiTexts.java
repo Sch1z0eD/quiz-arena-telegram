@@ -1,7 +1,6 @@
 package com.quizarena.handler;
 
 import com.quizarena.config.BrandProperties;
-import com.quizarena.domain.Category;
 import com.quizarena.domain.Profile;
 import com.quizarena.domain.TopScope;
 import com.quizarena.i18n.Localizer;
@@ -100,10 +99,6 @@ public class UiTexts {
     public String inlinePlayDescription(Locale locale) { return localizer.get(locale, "inline.play.description"); }
     public String inlinePlayMessage(Locale locale, String name) { return localizer.get(locale, "inline.play.message", name); }
     public String inlinePlayButton(Locale locale) { return localizer.get(locale, "inline.play.button"); }
-
-    public String categoryLabel(Category category, Locale locale) {
-        return localizer.get(locale, "category." + category.slug());
-    }
 
     public String difficultyLabel(String value, Locale locale) {
         return switch (value) {
