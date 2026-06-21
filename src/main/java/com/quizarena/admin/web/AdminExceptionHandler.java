@@ -16,6 +16,12 @@ public class AdminExceptionHandler {
         return new ErrorBody(exception.getMessage());
     }
 
+    @ExceptionHandler(DuplicateQuestionException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorBody handleDuplicate(DuplicateQuestionException exception) {
+        return new ErrorBody(exception.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorBody handleValidation(IllegalArgumentException exception) {

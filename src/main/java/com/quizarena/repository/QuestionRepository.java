@@ -14,6 +14,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query(value = """
             SELECT * FROM questions
             WHERE language = :language
+              AND active = TRUE
               AND (:category = '' OR category = :category)
               AND (:difficulty = '' OR difficulty = :difficulty)
             ORDER BY RANDOM() LIMIT :limit
@@ -26,6 +27,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query(value = """
             SELECT COUNT(*) FROM questions
             WHERE language = :language
+              AND active = TRUE
               AND (:category = '' OR category = :category)
               AND (:difficulty = '' OR difficulty = :difficulty)
             """, nativeQuery = true)
@@ -38,11 +40,23 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query(value = """
             SELECT category FROM questions
-            WHERE language = :language AND category IS NOT NULL
+            WHERE language = :language AND active = TRUE AND category IS NOT NULL
             GROUP BY category
             HAVING COUNT(*) >= :min
             """, nativeQuery = true)
     List<String> categoriesWithMinQuestions(@Param("language") String language, @Param("min") int min);
+
+    @Query(value = """
+            SELECT difficulty FROM questions
+            WHERE language = :language
+              AND active = TRUE
+              AND difficulty IS NOT NULL
+              AND (:category = '' OR category = :category)
+            GROUP BY difficulty
+            HAVING COUNT(*) >= :min
+            """, nativeQuery = true)
+    List<String> difficultiesWithMinQuestions(@Param("category") String category,
+                                              @Param("language") String language, @Param("min") int min);
 
     @Query("""
             SELECT q FROM Question q

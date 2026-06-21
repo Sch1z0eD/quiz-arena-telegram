@@ -4,10 +4,12 @@ import com.quizarena.bot.MenuMessenger;
 import com.quizarena.handler.UiTexts;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,8 +57,10 @@ class MenuServiceTest {
 
     @Test
     void groupChatCanPickQuizCategory() throws Exception {
+        when(gameService.availableDifficulties("science", "en"))
+                .thenReturn(new GameService.DifficultyOptions(List.of("easy"), true));
         service.navigate(GROUP, 1, 7L, "Bob", "m:cat:science", EN);
-        verify(menuMessenger).editDifficulties(eq(GROUP), eq(1), eq("science"), any(), eq(EN));
+        verify(menuMessenger).editDifficulties(eq(GROUP), eq(1), eq("science"), any(), any(), anyBoolean(), eq(EN));
     }
 
     @Test

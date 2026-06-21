@@ -40,6 +40,9 @@ public class Question {
     @Column(name = "question_hash", nullable = false, unique = true)
     private String questionHash;
 
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     protected Question() {}
 
     public Question(String text, String optionA, String optionB, String optionC, String optionD,
@@ -67,6 +70,25 @@ public class Question {
     public String getDifficulty() { return difficulty; }
     public String getLanguage() { return language; }
     public String getQuestionHash() { return questionHash; }
+    public boolean isActive() { return active; }
+
+    public void update(String text, String optionA, String optionB, String optionC, String optionD,
+                       int correctOption, String category, String difficulty, String language, String questionHash) {
+        this.text = text;
+        this.optionA = optionA;
+        this.optionB = optionB;
+        this.optionC = optionC;
+        this.optionD = optionD;
+        this.correctOption = correctOption;
+        this.category = category;
+        this.difficulty = difficulty;
+        this.language = language;
+        this.questionHash = questionHash;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
     public String getOptionByIndex(int index) {
         return switch (index) {

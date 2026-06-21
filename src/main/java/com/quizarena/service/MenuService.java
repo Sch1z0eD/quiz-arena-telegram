@@ -71,7 +71,9 @@ public class MenuService {
                     gameService.availableCategories(locale.getLanguage()), chatId > 0, locale);
             case "cat" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
-                menuMessenger.editDifficulties(chatId, messageId, slug, categoryLabel(slug, locale), locale);
+                GameService.DifficultyOptions options = difficultyOptions(slug, locale);
+                menuMessenger.editDifficulties(chatId, messageId, slug, categoryLabel(slug, locale),
+                        options.difficulties(), options.anyAvailable(), locale);
             }
             case "diff" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
@@ -116,7 +118,9 @@ public class MenuService {
                     gameService.availableCategories(locale.getLanguage()), chatId > 0, locale);
             case "dcat" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
-                menuMessenger.editDuelDifficulties(chatId, messageId, slug, categoryLabel(slug, locale), locale);
+                GameService.DifficultyOptions options = difficultyOptions(slug, locale);
+                menuMessenger.editDuelDifficulties(chatId, messageId, slug, categoryLabel(slug, locale),
+                        options.difficulties(), options.anyAvailable(), locale);
             }
             case "ddiff" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
@@ -158,7 +162,9 @@ public class MenuService {
         String category = "any".equals(slug) ? "" : slug;
         String difficulty = "any".equals(difficultyToken) ? "" : difficultyToken;
         if (!gameService.hasEnoughQuestions(category, difficulty, locale.getLanguage())) {
-            menuMessenger.editDifficulties(chatId, messageId, slug, categoryLabel(slug, locale), locale);
+            GameService.DifficultyOptions options = difficultyOptions(slug, locale);
+            menuMessenger.editDifficulties(chatId, messageId, slug, categoryLabel(slug, locale),
+                    options.difficulties(), options.anyAvailable(), locale);
             return texts.notEnoughQuestions(locale);
         }
         if (gameService.gameActive(chatId)) {
@@ -175,6 +181,11 @@ public class MenuService {
             return texts.btnAnyCategory(locale);
         }
         return categoryService.name(slug, locale);
+    }
+
+    private GameService.DifficultyOptions difficultyOptions(String slug, Locale locale) {
+        String category = "any".equals(slug) ? "" : slug;
+        return gameService.availableDifficulties(category, locale.getLanguage());
     }
 
     private static TopScope parseScope(String value) {

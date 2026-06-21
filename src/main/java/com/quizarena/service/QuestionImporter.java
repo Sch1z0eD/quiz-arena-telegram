@@ -12,9 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -91,7 +88,7 @@ public class QuestionImporter implements CommandLineRunner {
             if (source.incorrect().size() != 3) {
                 continue;
             }
-            String hash = md5(source.question());
+            String hash = QuestionHash.of(source.question());
             if (questionRepository.existsByQuestionHash(hash)) {
                 continue;
             }
@@ -116,19 +113,6 @@ public class QuestionImporter implements CommandLineRunner {
             TimeUnit.SECONDS.sleep(RATE_LIMIT_PAUSE_SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-    }
-
-    private static String md5(String text) {
-        try {
-            byte[] digest = MessageDigest.getInstance("MD5").digest(text.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder(digest.length * 2);
-            for (byte b : digest) {
-                hex.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
-            }
-            return hex.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
         }
     }
 }

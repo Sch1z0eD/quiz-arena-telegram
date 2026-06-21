@@ -94,10 +94,11 @@ public class MenuMessenger {
                 categoriesMarkup(available, privateChat, "m:cat", locale), locale);
     }
 
-    public void editDifficulties(long chatId, int messageId, String slug, String categoryLabel, Locale locale)
+    public void editDifficulties(long chatId, int messageId, String slug, String categoryLabel,
+                                 List<String> difficulties, boolean anyAvailable, Locale locale)
             throws TelegramApiException {
         editBanner(chatId, messageId, GAME, texts.difficultyTitle(locale, categoryLabel),
-                difficultyMarkup(slug, "m:diff", "m:play", locale), locale);
+                difficultyMarkup(slug, "m:diff", "m:play", difficulties, anyAvailable, locale), locale);
     }
 
     public void editStarting(long chatId, int messageId, String categoryLabel, String difficultyLabel, Locale locale)
@@ -125,10 +126,11 @@ public class MenuMessenger {
                 categoriesMarkup(available, privateChat, "m:dcat", locale), locale);
     }
 
-    public void editDuelDifficulties(long chatId, int messageId, String slug, String categoryLabel, Locale locale)
+    public void editDuelDifficulties(long chatId, int messageId, String slug, String categoryLabel,
+                                     List<String> difficulties, boolean anyAvailable, Locale locale)
             throws TelegramApiException {
         editBanner(chatId, messageId, DUEL, texts.difficultyTitle(locale, categoryLabel),
-                difficultyMarkup(slug, "m:ddiff", "m:duel", locale), locale);
+                difficultyMarkup(slug, "m:ddiff", "m:duel", difficulties, anyAvailable, locale), locale);
     }
 
     public void editDuelMode(long chatId, int messageId, String slug, String difficulty, Locale locale)
@@ -265,13 +267,23 @@ public class MenuMessenger {
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
-    private InlineKeyboardMarkup difficultyMarkup(String slug, String prefix, String back, Locale locale) {
-        return InlineKeyboardMarkup.builder().keyboard(List.of(
-                new InlineKeyboardRow(button(texts.difficultyLabel("easy", locale), prefix + ":" + slug + ":easy"),
-                        button(texts.difficultyLabel("medium", locale), prefix + ":" + slug + ":medium")),
-                new InlineKeyboardRow(button(texts.difficultyLabel("hard", locale), prefix + ":" + slug + ":hard"),
-                        button(texts.btnAnyDifficulty(locale), prefix + ":" + slug + ":any")),
-                new InlineKeyboardRow(button(texts.btnBack(locale), back)))).build();
+    private InlineKeyboardMarkup difficultyMarkup(String slug, String prefix, String back,
+                                                  List<String> difficulties, boolean anyAvailable, Locale locale) {
+        List<InlineKeyboardRow> rows = new ArrayList<>();
+        for (int i = 0; i < difficulties.size(); i += 2) {
+            InlineKeyboardRow row = new InlineKeyboardRow();
+            row.add(button(texts.difficultyLabel(difficulties.get(i), locale), prefix + ":" + slug + ":" + difficulties.get(i)));
+            if (i + 1 < difficulties.size()) {
+                row.add(button(texts.difficultyLabel(difficulties.get(i + 1), locale),
+                        prefix + ":" + slug + ":" + difficulties.get(i + 1)));
+            }
+            rows.add(row);
+        }
+        if (anyAvailable) {
+            rows.add(new InlineKeyboardRow(button(texts.btnAnyDifficulty(locale), prefix + ":" + slug + ":any")));
+        }
+        rows.add(new InlineKeyboardRow(button(texts.btnBack(locale), back)));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
     private InlineKeyboardMarkup leaderboardMarkup(Locale locale) {

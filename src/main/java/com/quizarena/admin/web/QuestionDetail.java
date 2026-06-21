@@ -4,5 +4,5 @@ import java.util.List;
 
 public record QuestionDetail(long id, String text, List<String> options, int correctOption,
                              String category, String difficulty, String language, String hash,
-                             QuestionStats stats) {
+                             boolean active, QuestionStats stats) {
 }

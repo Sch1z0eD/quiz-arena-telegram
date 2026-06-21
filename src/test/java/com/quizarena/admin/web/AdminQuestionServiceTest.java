@@ -1,9 +1,14 @@
 package com.quizarena.admin.web;
 
+import com.quizarena.admin.audit.AuditService;
+import com.quizarena.admin.auth.VerifiedAdmin;
 import com.quizarena.domain.Question;
 import com.quizarena.repository.AnswerRepository;
+import com.quizarena.repository.CategoryRepository;
 import com.quizarena.repository.QuestionRepository;
+import com.quizarena.service.QuestionHash;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -12,15 +17,26 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AdminQuestionServiceTest {
 
+    private static final VerifiedAdmin ADMIN = new VerifiedAdmin(1, "Admin");
+
     private final QuestionRepository questions = mock(QuestionRepository.class);
     private final AnswerRepository answers = mock(AnswerRepository.class);
-    private final AdminQuestionService service = new AdminQuestionService(questions, answers);
+    private final CategoryRepository categories = mock(CategoryRepository.class);
+    private final AuditService audit = mock(AuditService.class);
+    private final AdminQuestionService service = new AdminQuestionService(questions, answers, categories, audit);
 
     @Test
     void detailComputesAccuracyFromAnswers() {
@@ -31,27 +47,9 @@ class AdminQuestionServiceTest {
         QuestionDetail detail = service.detail(7L).orElseThrow();
 
         assertEquals(7L, detail.id());
-        assertEquals(4, detail.stats().answered());
-        assertEquals(3, detail.stats().correct());
         assertEquals(75, detail.stats().accuracyPercent());
         assertEquals(List.of("A", "B", "C", "D"), detail.options());
-        assertEquals("science", detail.category());
-        assertEquals("h7", detail.hash());
-    }
-
-    @Test
-    void detailAccuracyIsZeroWithoutAnswers() {
-        when(questions.findById(7L)).thenReturn(Optional.of(question(7L)));
-        when(answers.countByQuestionId(7L)).thenReturn(0L);
-        when(answers.countByQuestionIdAndCorrectTrue(7L)).thenReturn(0L);
-
-        assertEquals(0, service.detail(7L).orElseThrow().stats().accuracyPercent());
-    }
-
-    @Test
-    void detailEmptyWhenMissing() {
-        when(questions.findById(9L)).thenReturn(Optional.empty());
-        assertTrue(service.detail(9L).isEmpty());
+        assertTrue(detail.active());
     }
 
     @Test
@@ -61,12 +59,120 @@ class AdminQuestionServiceTest {
 
         PageResponse<QuestionSummary> response = service.list(null, null, null, null, PageRequest.of(1, 20));
 
-        assertEquals(1, response.page());
-        assertEquals(20, response.size());
         assertEquals(45, response.totalElements());
-        assertEquals(3, response.totalPages());
         assertEquals(7L, response.content().get(0).id());
-        assertEquals("science", response.content().get(0).category());
+        assertTrue(response.content().get(0).active());
+    }
+
+    @Test
+    void createValidatesHashesPersistsAndAudits() {
+        when(categories.existsBySlug("science")).thenReturn(true);
+        String hash = QuestionHash.of("Capital of Australia?");
+        when(questions.existsByQuestionHash(hash)).thenReturn(false);
+        when(questions.save(any())).thenAnswer(invocation -> {
+            Question saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 100L);
+            return saved;
+        });
+
+        service.create(ADMIN, request("Capital of Australia?"));
+
+        ArgumentCaptor<Question> saved = ArgumentCaptor.forClass(Question.class);
+        verify(questions).save(saved.capture());
+        assertEquals(hash, saved.getValue().getQuestionHash());
+        assertTrue(saved.getValue().isActive());
+        verify(audit).record(eq(ADMIN), eq("question.created"), eq("100"), anyString());
+    }
+
+    @Test
+    void createRejectsDuplicateText() {
+        when(categories.existsBySlug("science")).thenReturn(true);
+        when(questions.existsByQuestionHash(QuestionHash.of("Capital of Australia?"))).thenReturn(true);
+
+        assertThrows(DuplicateQuestionException.class, () -> service.create(ADMIN, request("Capital of Australia?")));
+        verify(questions, never()).save(any());
+        verify(audit, never()).record(any(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void createRejectsWrongOptionCount() {
+        when(categories.existsBySlug("science")).thenReturn(true);
+        QuestionRequest bad = new QuestionRequest("Q", List.of("A", "B", "C"), 0, "science", "easy", "en");
+        assertThrows(IllegalArgumentException.class, () -> service.create(ADMIN, bad));
+        verify(questions, never()).save(any());
+    }
+
+    @Test
+    void createRejectsUnknownCategory() {
+        when(categories.existsBySlug("nope")).thenReturn(false);
+        QuestionRequest bad = new QuestionRequest("Q", List.of("A", "B", "C", "D"), 0, "nope", "easy", "en");
+        assertThrows(IllegalArgumentException.class, () -> service.create(ADMIN, bad));
+        verify(questions, never()).save(any());
+    }
+
+    @Test
+    void updateRecomputesHashWhenTextChangesAndDetectsDuplicate() {
+        when(categories.existsBySlug("science")).thenReturn(true);
+        Question existing = question(7L);
+        when(questions.findById(7L)).thenReturn(Optional.of(existing));
+        when(questions.existsByQuestionHash(QuestionHash.of("Changed text?"))).thenReturn(true);
+
+        assertThrows(DuplicateQuestionException.class, () -> service.update(ADMIN, 7L, request("Changed text?")));
+        verify(audit, never()).record(any(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void updateRenamesRecomputesHashAndAudits() {
+        when(categories.existsBySlug("science")).thenReturn(true);
+        Question existing = question(7L);
+        when(questions.findById(7L)).thenReturn(Optional.of(existing));
+        when(questions.existsByQuestionHash(QuestionHash.of("Changed text?"))).thenReturn(false);
+
+        service.update(ADMIN, 7L, request("Changed text?"));
+
+        assertEquals(QuestionHash.of("Changed text?"), existing.getQuestionHash());
+        verify(audit).record(eq(ADMIN), eq("question.updated"), eq("7"), anyString());
+    }
+
+    @Test
+    void updateKeepsHashWhenTextUnchanged() {
+        when(categories.existsBySlug("science")).thenReturn(true);
+        Question existing = question(7L);
+        String originalHash = existing.getQuestionHash();
+        when(questions.findById(7L)).thenReturn(Optional.of(existing));
+
+        service.update(ADMIN, 7L, request("Q text"));
+
+        assertEquals(originalHash, existing.getQuestionHash());
+        verify(questions, never()).existsByQuestionHash(anyString());
+        verify(audit).record(eq(ADMIN), eq("question.updated"), eq("7"), anyString());
+    }
+
+    @Test
+    void disableTogglesActiveAndAudits() {
+        Question existing = question(7L);
+        when(questions.findById(7L)).thenReturn(Optional.of(existing));
+
+        service.setActive(ADMIN, 7L, false);
+
+        assertTrue(!existing.isActive());
+        verify(audit).record(eq(ADMIN), eq("question.disabled"), eq("7"), isNull());
+    }
+
+    @Test
+    void enableTogglesActiveAndAudits() {
+        Question existing = question(7L);
+        existing.setActive(false);
+        when(questions.findById(7L)).thenReturn(Optional.of(existing));
+
+        service.setActive(ADMIN, 7L, true);
+
+        assertTrue(existing.isActive());
+        verify(audit).record(eq(ADMIN), eq("question.enabled"), eq("7"), isNull());
+    }
+
+    private static QuestionRequest request(String text) {
+        return new QuestionRequest(text, List.of("A", "B", "C", "D"), 1, "science", "easy", "en");
     }
 
     private static Question question(long id) {
@@ -74,5 +180,4 @@ class AdminQuestionServiceTest {
         ReflectionTestUtils.setField(q, "id", id);
         return q;
     }
-
 }

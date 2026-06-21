@@ -4,6 +4,7 @@ import com.quizarena.bot.GameMessenger;
 import com.quizarena.config.GameProperties;
 import com.quizarena.domain.AnswerRecord;
 import com.quizarena.domain.Category;
+import com.quizarena.domain.Difficulty;
 import com.quizarena.domain.GameMode;
 import com.quizarena.domain.GameResult;
 import com.quizarena.domain.GameState;
@@ -84,6 +85,21 @@ public class GameService {
         }
         return categories;
     }
+
+    public DifficultyOptions availableDifficulties(String category, String language) {
+        int min = properties.questionsPerGame();
+        List<String> present = questionRepository.difficultiesWithMinQuestions(category, language, min);
+        List<String> ordered = new ArrayList<>();
+        for (Difficulty difficulty : Difficulty.values()) {
+            if (present.contains(difficulty.value())) {
+                ordered.add(difficulty.value());
+            }
+        }
+        boolean anyAvailable = questionRepository.countFiltered(category, "", language) >= min;
+        return new DifficultyOptions(ordered, anyAvailable);
+    }
+
+    public record DifficultyOptions(List<String> difficulties, boolean anyAvailable) {}
 
     public void startQuiz(long chatId, boolean group, long userId, String name, String category, String difficulty,
                           Locale locale) throws TelegramApiException {
