@@ -63,6 +63,10 @@ public class Question {
     public String getOptionC() { return optionC; }
     public String getOptionD() { return optionD; }
     public int getCorrectOption() { return correctOption; }
+    public String getCategory() { return category; }
+    public String getDifficulty() { return difficulty; }
+    public String getLanguage() { return language; }
+    public String getQuestionHash() { return questionHash; }
 
     public String getOptionByIndex(int index) {
         return switch (index) {

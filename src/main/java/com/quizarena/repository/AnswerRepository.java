@@ -17,4 +17,8 @@ public interface AnswerRepository extends JpaRepository<AnswerRecord, Long> {
     long countByGameIdAndUserId(long gameId, long userId);
 
     long countByGameIdAndUserIdAndCorrectTrue(long gameId, long userId);
+
+    long countByQuestionId(long questionId);
+
+    long countByQuestionIdAndCorrectTrue(long questionId);
 }
