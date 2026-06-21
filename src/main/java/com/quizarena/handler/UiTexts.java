@@ -1,5 +1,6 @@
 package com.quizarena.handler;
 
+import com.quizarena.config.BrandProperties;
 import com.quizarena.domain.Category;
 import com.quizarena.domain.Profile;
 import com.quizarena.domain.TopScope;
@@ -12,13 +13,15 @@ import java.util.Locale;
 public class UiTexts {
 
     private final Localizer localizer;
+    private final BrandProperties brand;
 
-    public UiTexts(Localizer localizer) {
+    public UiTexts(Localizer localizer, BrandProperties brand) {
         this.localizer = localizer;
+        this.brand = brand;
     }
 
     public String menuHome(Locale locale) {
-        return localizer.get(locale, "menu.home");
+        return localizer.get(locale, "menu.home", brand.name());
     }
 
     public String groupHint(Locale locale) {

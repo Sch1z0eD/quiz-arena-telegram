@@ -2,6 +2,7 @@ package com.quizarena.handler;
 
 import com.quizarena.bot.BotIdentity;
 import com.quizarena.bot.InlineMessenger;
+import com.quizarena.config.BrandProperties;
 import com.quizarena.i18n.Localizer;
 import com.quizarena.i18n.Plurals;
 import com.quizarena.service.DuelService;
@@ -36,7 +37,8 @@ class InlineQueryHandlerTest {
     private final LocaleService localeService = mock(LocaleService.class);
     private final InlineMessenger messenger = mock(InlineMessenger.class);
     private final BotIdentity botIdentity = mock(BotIdentity.class);
-    private final UiTexts texts = new UiTexts(new Localizer(messageSource(), new Plurals()));
+    private final UiTexts texts =
+            new UiTexts(new Localizer(messageSource(), new Plurals()), new BrandProperties("QuizArena", "@QuizArenaBot"));
     private final InlineQueryHandler handler =
             new InlineQueryHandler(duelService, localeService, texts, messenger, botIdentity);
 
