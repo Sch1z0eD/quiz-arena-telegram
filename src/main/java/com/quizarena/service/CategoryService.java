@@ -44,4 +44,8 @@ public class CategoryService {
         }
         return byLanguage.getOrDefault(locale.getLanguage(), slug);
     }
+
+    public boolean exists(String slug) {
+        return namesBySlug.containsKey(slug);
+    }
 }

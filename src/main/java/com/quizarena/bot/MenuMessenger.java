@@ -1,6 +1,5 @@
 package com.quizarena.bot;
 
-import com.quizarena.domain.Category;
 import com.quizarena.domain.PersonalRank;
 import com.quizarena.domain.Profile;
 import com.quizarena.domain.Standing;
@@ -41,6 +40,7 @@ public class MenuMessenger {
     private static final String DUEL = "duel_banner.svg";
     private static final String RULES = "rules_banner.svg";
     private static final int CAPTION_LIMIT = 1024;
+    private static final int CATEGORY_PAGE_SIZE = 8;
 
     private final TelegramClient telegramClient;
     private final UiTexts texts;
@@ -70,10 +70,10 @@ public class MenuMessenger {
         telegramClient.execute(SendMessage.builder().chatId(chatId).text(text).build());
     }
 
-    public void sendCategories(long chatId, List<Category> available, boolean privateChat, Locale locale)
+    public void sendCategories(long chatId, List<String> ordered, int page, boolean privateChat, Locale locale)
             throws TelegramApiException {
         sendBanner(chatId, GAME, texts.categoriesTitle(locale),
-                categoriesMarkup(available, privateChat, "m:cat", locale), locale);
+                categoriesMarkup(ordered, page, privateChat, "m:cat", "m:catpg", locale), locale);
     }
 
     public void deleteMessage(long chatId, int messageId) {
@@ -88,10 +88,10 @@ public class MenuMessenger {
         editBanner(chatId, messageId, WELCOME, texts.menuHome(locale), mainMenuMarkup(locale), locale);
     }
 
-    public void editCategories(long chatId, int messageId, List<Category> available, boolean privateChat, Locale locale)
+    public void editCategories(long chatId, int messageId, List<String> ordered, int page, boolean privateChat, Locale locale)
             throws TelegramApiException {
         editBanner(chatId, messageId, GAME, texts.categoriesTitle(locale),
-                categoriesMarkup(available, privateChat, "m:cat", locale), locale);
+                categoriesMarkup(ordered, page, privateChat, "m:cat", "m:catpg", locale), locale);
     }
 
     public void editDifficulties(long chatId, int messageId, String slug, String categoryLabel,
@@ -120,10 +120,10 @@ public class MenuMessenger {
                 .chatId(chatId).text(rules).replyMarkup(backToMenuMarkup(locale)).parseMode("HTML").build());
     }
 
-    public void editDuelCategories(long chatId, int messageId, List<Category> available, boolean privateChat, Locale locale)
+    public void editDuelCategories(long chatId, int messageId, List<String> ordered, int page, boolean privateChat, Locale locale)
             throws TelegramApiException {
         editBanner(chatId, messageId, DUEL, texts.categoriesTitle(locale),
-                categoriesMarkup(available, privateChat, "m:dcat", locale), locale);
+                categoriesMarkup(ordered, page, privateChat, "m:dcat", "m:dcatpg", locale), locale);
     }
 
     public void editDuelDifficulties(long chatId, int messageId, String slug, String categoryLabel,
@@ -248,17 +248,28 @@ public class MenuMessenger {
                         button(texts.btnLanguage(locale), "m:lang")))).build();
     }
 
-    private InlineKeyboardMarkup categoriesMarkup(List<Category> available, boolean privateChat, String prefix,
-                                                  Locale locale) {
+    private InlineKeyboardMarkup categoriesMarkup(List<String> ordered, int page, boolean privateChat,
+                                                  String prefix, String pageToken, Locale locale) {
+        Paged<String> paged = Paged.of(ordered, page, CATEGORY_PAGE_SIZE);
+        List<String> slugs = paged.items();
         List<InlineKeyboardRow> rows = new ArrayList<>();
-        for (int i = 0; i < available.size(); i += 2) {
+        for (int i = 0; i < slugs.size(); i += 2) {
             InlineKeyboardRow row = new InlineKeyboardRow();
-            row.add(button(categoryService.name(available.get(i).slug(), locale), prefix + ":" + available.get(i).slug()));
-            if (i + 1 < available.size()) {
-                row.add(button(categoryService.name(available.get(i + 1).slug(), locale),
-                        prefix + ":" + available.get(i + 1).slug()));
+            row.add(button(categoryService.name(slugs.get(i), locale), prefix + ":" + slugs.get(i)));
+            if (i + 1 < slugs.size()) {
+                row.add(button(categoryService.name(slugs.get(i + 1), locale), prefix + ":" + slugs.get(i + 1)));
             }
             rows.add(row);
+        }
+        if (paged.hasPrev() || paged.hasNext()) {
+            InlineKeyboardRow nav = new InlineKeyboardRow();
+            if (paged.hasPrev()) {
+                nav.add(button("◀", pageToken + ":" + (paged.page() - 1)));
+            }
+            if (paged.hasNext()) {
+                nav.add(button("▶", pageToken + ":" + (paged.page() + 1)));
+            }
+            rows.add(nav);
         }
         rows.add(new InlineKeyboardRow(button(texts.btnAnyCategory(locale), prefix + ":any")));
         if (privateChat) {

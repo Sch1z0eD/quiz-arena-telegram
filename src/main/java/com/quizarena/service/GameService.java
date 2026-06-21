@@ -3,7 +3,6 @@ package com.quizarena.service;
 import com.quizarena.bot.GameMessenger;
 import com.quizarena.config.GameProperties;
 import com.quizarena.domain.AnswerRecord;
-import com.quizarena.domain.Category;
 import com.quizarena.domain.Difficulty;
 import com.quizarena.domain.GameMode;
 import com.quizarena.domain.GameResult;
@@ -75,15 +74,11 @@ public class GameService {
         return questionRepository.countFiltered(category, difficulty, language) >= properties.questionsPerGame();
     }
 
-    public List<Category> availableCategories(String language) {
-        List<String> slugs = questionRepository.categoriesWithMinQuestions(language, properties.questionsPerGame());
-        List<Category> categories = new ArrayList<>();
-        for (Category category : Category.values()) {
-            if (slugs.contains(category.slug())) {
-                categories.add(category);
-            }
-        }
-        return categories;
+    public List<String> availableCategories(String language) {
+        return questionRepository.categoriesWithMinQuestions(language, properties.questionsPerGame())
+                .stream()
+                .sorted()
+                .toList();
     }
 
     public DifficultyOptions availableDifficulties(String category, String language) {

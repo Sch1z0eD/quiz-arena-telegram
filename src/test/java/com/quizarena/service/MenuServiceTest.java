@@ -4,6 +4,8 @@ import com.quizarena.bot.MenuMessenger;
 import com.quizarena.handler.UiTexts;
 import org.junit.jupiter.api.Test;
 
+import org.mockito.ArgumentCaptor;
+
 import java.util.List;
 import java.util.Locale;
 
@@ -29,8 +31,9 @@ class MenuServiceTest {
     private final MenuMessenger menuMessenger = mock(MenuMessenger.class);
     private final UiTexts texts = mock(UiTexts.class);
     private final DuelService duelService = mock(DuelService.class);
+    private final CategoryService categoryService = mock(CategoryService.class);
     private final MenuService service = new MenuService(gameService, menuMessenger, texts, duelService,
-            mock(LocaleService.class), mock(AvatarService.class), mock(CategoryService.class));
+            mock(LocaleService.class), mock(AvatarService.class), categoryService);
 
     @Test
     void groupChatCannotStartDuelSearch() throws Exception {
@@ -67,5 +70,34 @@ class MenuServiceTest {
     void privateChatCanOpenMainMenu() throws Exception {
         service.navigate(PRIVATE, 1, 7L, "Bob", "m:home", EN);
         verify(menuMessenger).editMainMenu(PRIVATE, 1, EN);
+    }
+
+    @Test
+    void categoryPagingForwardsRequestedPage() throws Exception {
+        when(gameService.availableCategories("en")).thenReturn(List.of("science"));
+        service.navigate(PRIVATE, 5, 7L, "Bob", "m:catpg:2", EN);
+        verify(menuMessenger).editCategories(eq(PRIVATE), eq(5), any(), eq(2), eq(true), eq(EN));
+    }
+
+    @Test
+    void categoryPagingAllowedInGroup() throws Exception {
+        when(gameService.availableCategories("en")).thenReturn(List.of("science"));
+        String toast = service.navigate(GROUP, 5, 7L, "Bob", "m:catpg:1", EN);
+        assertEquals("", toast);
+        verify(menuMessenger).editCategories(eq(GROUP), eq(5), any(), eq(1), eq(false), eq(EN));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void categoriesAreOrderedByLocalizedName() throws Exception {
+        when(gameService.availableCategories("en")).thenReturn(List.of("a", "b"));
+        when(categoryService.name("a", EN)).thenReturn("Zebra");
+        when(categoryService.name("b", EN)).thenReturn("Apple");
+
+        service.navigate(PRIVATE, 5, 7L, "Bob", "m:play", EN);
+
+        ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
+        verify(menuMessenger).editCategories(eq(PRIVATE), eq(5), captor.capture(), eq(0), eq(true), eq(EN));
+        assertEquals(List.of("b", "a"), captor.getValue());
     }
 }

@@ -6,6 +6,9 @@ import com.quizarena.handler.UiTexts;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.text.Collator;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -16,7 +19,7 @@ public class MenuService {
     // Reachable in a group: info cards plus the /quiz game picker. The full menu (home),
     // duels and language stay private-only.
     private static final Set<String> GROUP_ALLOWED =
-            Set.of("profile", "board", "rank", "lb", "rules", "menu", "play", "cat", "diff");
+            Set.of("profile", "board", "rank", "lb", "rules", "menu", "play", "cat", "catpg", "diff");
 
     private final GameService gameService;
     private final MenuMessenger menuMessenger;
@@ -50,7 +53,7 @@ public class MenuService {
             menuMessenger.hint(chatId, texts.notEnoughQuestions(locale));
             return;
         }
-        menuMessenger.sendCategories(chatId, gameService.availableCategories(locale.getLanguage()), chatId > 0, locale);
+        menuMessenger.sendCategories(chatId, orderedCategories(locale), 0, chatId > 0, locale);
     }
 
     public void openLeaderboard(long chatId, TopScope scope, long userId, Locale locale) {
@@ -67,8 +70,9 @@ public class MenuService {
         }
         switch (screen) {
             case "home" -> menuMessenger.editMainMenu(chatId, messageId, locale);
-            case "play" -> menuMessenger.editCategories(chatId, messageId,
-                    gameService.availableCategories(locale.getLanguage()), chatId > 0, locale);
+            case "play" -> menuMessenger.editCategories(chatId, messageId, orderedCategories(locale), 0, chatId > 0, locale);
+            case "catpg" -> menuMessenger.editCategories(chatId, messageId, orderedCategories(locale),
+                    parsePage(parts), chatId > 0, locale);
             case "cat" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
                 GameService.DifficultyOptions options = difficultyOptions(slug, locale);
@@ -114,8 +118,9 @@ public class MenuService {
                 localeService.setLanguage(userId, language);
                 menuMessenger.editMainMenu(chatId, messageId, localeService.parse(language));
             }
-            case "duel" -> menuMessenger.editDuelCategories(chatId, messageId,
-                    gameService.availableCategories(locale.getLanguage()), chatId > 0, locale);
+            case "duel" -> menuMessenger.editDuelCategories(chatId, messageId, orderedCategories(locale), 0, chatId > 0, locale);
+            case "dcatpg" -> menuMessenger.editDuelCategories(chatId, messageId, orderedCategories(locale),
+                    parsePage(parts), chatId > 0, locale);
             case "dcat" -> {
                 String slug = parts.length > 2 ? parts[2] : "any";
                 GameService.DifficultyOptions options = difficultyOptions(slug, locale);
@@ -186,6 +191,25 @@ public class MenuService {
     private GameService.DifficultyOptions difficultyOptions(String slug, Locale locale) {
         String category = "any".equals(slug) ? "" : slug;
         return gameService.availableDifficulties(category, locale.getLanguage());
+    }
+
+    private List<String> orderedCategories(Locale locale) {
+        Collator collator = Collator.getInstance(locale);
+        return gameService.availableCategories(locale.getLanguage()).stream()
+                .sorted(Comparator.comparing((String slug) -> categoryService.name(slug, locale), collator)
+                        .thenComparing(Comparator.naturalOrder()))
+                .toList();
+    }
+
+    private static int parsePage(String[] parts) {
+        if (parts.length > 2) {
+            try {
+                return Integer.parseInt(parts[2]);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private static TopScope parseScope(String value) {

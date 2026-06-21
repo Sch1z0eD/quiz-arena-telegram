@@ -1,6 +1,5 @@
 package com.quizarena.integration;
 
-import com.quizarena.domain.Category;
 import com.quizarena.domain.CategoryEntity;
 import com.quizarena.domain.CategoryTranslation;
 import com.quizarena.repository.CategoryRepository;
@@ -46,10 +45,10 @@ class CategoryServiceIT extends AbstractIntegrationTest {
 
     @Test
     void pickerCategoriesResolveToDbNames() {
-        List<Category> categories = gameService.availableCategories("ru");
+        List<String> categories = gameService.availableCategories("ru");
         assertFalse(categories.isEmpty(), "the ru picker should not be empty for the seeded data");
-        for (Category category : categories) {
-            assertNotEquals(category.slug(), categoryService.name(category.slug(), RU),
+        for (String slug : categories) {
+            assertNotEquals(slug, categoryService.name(slug, RU),
                     "every picker category must resolve to a real DB name, not the slug fallback");
         }
     }

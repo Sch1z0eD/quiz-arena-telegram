@@ -27,13 +27,4 @@ public enum Category {
     public int openTdbId() {
         return openTdbId;
     }
-
-    public static Category fromSlug(String slug) {
-        for (Category category : values()) {
-            if (category.slug.equals(slug)) {
-                return category;
-            }
-        }
-        return null;
-    }
 }

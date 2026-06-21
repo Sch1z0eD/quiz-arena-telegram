@@ -1,8 +1,8 @@
 package com.quizarena.handler;
 
-import com.quizarena.domain.Category;
 import com.quizarena.domain.Difficulty;
 import com.quizarena.domain.TopScope;
+import com.quizarena.service.CategoryService;
 import com.quizarena.service.DuelService;
 import com.quizarena.service.GameService;
 import com.quizarena.service.LocaleService;
@@ -20,13 +20,15 @@ public class QuizCommandHandler {
     private final MenuService menuService;
     private final LocaleService localeService;
     private final DuelService duelService;
+    private final CategoryService categoryService;
 
     public QuizCommandHandler(GameService gameService, MenuService menuService, LocaleService localeService,
-                              DuelService duelService) {
+                              DuelService duelService, CategoryService categoryService) {
         this.gameService = gameService;
         this.menuService = menuService;
         this.localeService = localeService;
         this.duelService = duelService;
+        this.categoryService = categoryService;
     }
 
     public void handle(Message message) throws TelegramApiException {
@@ -61,18 +63,15 @@ public class QuizCommandHandler {
         }
     }
 
-    private static String[] parseFilter(String[] parts) {
+    private String[] parseFilter(String[] parts) {
         String category = "";
         String difficulty = "";
         for (int i = 1; i < parts.length; i++) {
             String token = parts[i].toLowerCase();
             if (Difficulty.fromValue(token) != null) {
                 difficulty = token;
-            } else {
-                Category matched = Category.fromSlug(token);
-                if (matched != null) {
-                    category = matched.slug();
-                }
+            } else if (categoryService.exists(token)) {
+                category = token;
             }
         }
         return new String[]{category, difficulty};

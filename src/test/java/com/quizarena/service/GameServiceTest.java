@@ -2,7 +2,6 @@ package com.quizarena.service;
 
 import com.quizarena.bot.GameMessenger;
 import com.quizarena.config.GameProperties;
-import com.quizarena.domain.Category;
 import com.quizarena.i18n.Localizer;
 import com.quizarena.repository.AnswerRepository;
 import com.quizarena.repository.GameStore;
@@ -37,8 +36,9 @@ class GameServiceTest {
     }
 
     @Test
-    void availableCategoriesScopesToLanguage() {
-        when(questions.categoriesWithMinQuestions("ru", 5)).thenReturn(List.of("science", "history"));
-        assertEquals(List.of(Category.SCIENCE, Category.HISTORY), service.availableCategories("ru"));
+    void availableCategoriesReadsDbSlugsSortedIncludingNewOnes() {
+        when(questions.categoriesWithMinQuestions("ru", 5))
+                .thenReturn(List.of("science", "russian-films-2026", "history"));
+        assertEquals(List.of("history", "russian-films-2026", "science"), service.availableCategories("ru"));
     }
 }
