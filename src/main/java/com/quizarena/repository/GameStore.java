@@ -6,6 +6,8 @@ import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.PersonalRank;
 import com.quizarena.domain.Standing;
 import com.quizarena.domain.TopScope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,6 +19,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.temporal.IsoFields;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +27,7 @@ import java.util.Set;
 @Repository
 public class GameStore {
 
+    private static final Logger log = LoggerFactory.getLogger(GameStore.class);
     private static final String TOKEN_SEQ = "quizarena:token";
     private static final String GAME_SEQ = "quizarena:gameId";
     private static final String LB_NAMES = "lb:names";
@@ -266,6 +270,26 @@ public class GameStore {
 
     private void touch(String key) {
         redis.expire(key, ttl);
+    }
+
+    /**
+     * All transient leaderboard display names ({@code userId -> name}) for the one-time user-name backfill.
+     * Best-effort: an unavailable Redis must not break startup, so failures yield an empty map.
+     */
+    public Map<Long, String> allLeaderboardNames() {
+        Map<Long, String> result = new HashMap<>();
+        try {
+            hash().entries(LB_NAMES).forEach((id, name) -> {
+                try {
+                    result.put(Long.parseLong(id), name);
+                } catch (NumberFormatException ignored) {
+                    // skip non-numeric keys
+                }
+            });
+        } catch (RuntimeException e) {
+            log.warn("Leaderboard names HGETALL failed; skipping name backfill", e);
+        }
+        return result;
     }
 
     private HashOperations<String, String, String> hash() {
