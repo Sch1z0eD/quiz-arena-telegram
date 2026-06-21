@@ -73,7 +73,12 @@ public class DuelMessenger {
     }
 
     public void editCancelled(long chatId, int messageId, Locale locale) {
-        editStatus(chatId, messageId, texts.duelSearchCancelled(locale), noKeyboard());
+        InlineKeyboardMarkup menu = InlineKeyboardMarkup.builder().keyboard(List.of(
+                new InlineKeyboardRow(InlineKeyboardButton.builder()
+                        .text(texts.btnMainMenu(locale))
+                        .callbackData("m:home")
+                        .build()))).build();
+        editStatus(chatId, messageId, texts.duelSearchCancelled(locale), menu);
     }
 
     // Matchup card is cosmetic: on any render/send failure fall back to the plain "opponent found" text
