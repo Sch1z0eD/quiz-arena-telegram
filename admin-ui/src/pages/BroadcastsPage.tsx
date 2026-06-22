@@ -9,6 +9,7 @@ import {
   useBroadcasts,
   useBroadcastStart,
   useBroadcastTest,
+  useLanguages,
 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BroadcastPreview, type PreviewButton } from "@/components/BroadcastPreview";
 
-const LANGUAGES = ["ru", "en"];
 const PAGE_SIZE = 10;
 const CAPTION_LIMIT = 1024;
 const TEXT_LIMIT = 4096;
@@ -68,6 +68,7 @@ export function BroadcastsPage(): ReactElement {
   const start = useBroadcastStart();
   const upload = useBroadcastPhotoUpload();
   const broadcasts = useBroadcasts(0, PAGE_SIZE);
+  const languages = useLanguages().data ?? [];
 
   // Any edit to the message or segment invalidates a prior dry-run, so full-send re-locks until re-run.
   function resetConfirmation(): void {
@@ -241,7 +242,7 @@ export function BroadcastsPage(): ReactElement {
               <Field label="Language">
                 <Select value={language} onValueChange={(v) => { setLanguage(v); resetConfirmation(); }}>
                   <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                  <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l} value={l} className="uppercase">{l}</SelectItem>)}</SelectContent>
+                  <SelectContent>{languages.map((l) => <SelectItem key={l.code} value={l.code} className="uppercase">{l.code}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
             ) : null}

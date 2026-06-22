@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from "react";
 import type { QuestionDetail, QuestionInput } from "@/lib/api";
-import { useCategories, useCreateQuestion, useUpdateQuestion } from "@/lib/queries";
+import { useCategories, useCreateQuestion, useLanguages, useUpdateQuestion } from "@/lib/queries";
 import { categoryLabel } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
-const LANGUAGES = ["en", "ru"];
 
 type Props =
   | { mode: "create"; onClose: () => void }
@@ -49,6 +48,7 @@ function initialState(props: Props): FormState {
 
 export function QuestionFormDialog(props: Props): ReactElement {
   const categories = useCategories();
+  const languages = useLanguages().data ?? [];
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
   const [form, setForm] = useState<FormState>(() => initialState(props));
@@ -126,7 +126,7 @@ export function QuestionFormDialog(props: Props): ReactElement {
               onChange={(value) => setForm((prev) => ({ ...prev, category: value }))} />
             <FormSelect label="Difficulty" value={form.difficulty} disabled={pending} options={toOptions(DIFFICULTIES)}
               onChange={(value) => setForm((prev) => ({ ...prev, difficulty: value }))} />
-            <FormSelect label="Language" value={form.language} disabled={pending} options={toOptions(LANGUAGES)}
+            <FormSelect label="Language" value={form.language} disabled={pending} options={toOptions(languages.map((language) => language.code))}
               onChange={(value) => setForm((prev) => ({ ...prev, language: value }))} />
           </div>
         </div>

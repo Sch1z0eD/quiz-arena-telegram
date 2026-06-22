@@ -16,6 +16,7 @@ import {
   type CategoryRow,
   type DryRunResult,
   type GameSettings,
+  type Language,
   type Me,
   type Overview,
   type PageResponse,
@@ -113,6 +114,10 @@ export function useBroadcastAbort(): UseMutationResult<void, Error, number> {
 
 export function useBroadcastPhotoUpload(): UseMutationResult<PhotoUpload, Error, File> {
   return useMutation({ mutationFn: (file) => api.uploadBroadcastPhoto(file) });
+}
+
+export function useLanguages(): UseQueryResult<Language[]> {
+  return useQuery({ queryKey: ["languages"], queryFn: api.listLanguages, staleTime: 60 * 60 * 1000 });
 }
 
 export function useGameSettings(): UseQueryResult<GameSettings> {

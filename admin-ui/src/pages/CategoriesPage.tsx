@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { Pencil, Plus, Power, Trash2 } from "lucide-react";
-import { ApiError, type CategoryRow } from "@/lib/api";
-import { useCategories, useCreateCategory, useDeleteCategory, useSetCategoryActive, useUpdateCategory } from "@/lib/queries";
+import { ApiError, type CategoryRow, type Language } from "@/lib/api";
+import { useCategories, useCreateCategory, useDeleteCategory, useLanguages, useSetCategoryActive, useUpdateCategory } from "@/lib/queries";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const LANGUAGES: { code: string; label: string }[] = [
-  { code: "ru", label: "Russian" },
-  { code: "en", label: "English" },
-];
-
 export function CategoriesPage(): ReactElement {
   const categories = useCategories();
+  const languages = useLanguages().data ?? [];
   const toggle = useSetCategoryActive();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<CategoryRow | null>(null);
@@ -63,7 +59,7 @@ export function CategoriesPage(): ReactElement {
           <TableHeader>
             <TableRow>
               <TableHead>Category</TableHead>
-              {LANGUAGES.map((language) => (
+              {languages.map((language) => (
                 <TableHead key={language.code} className="w-24 text-right uppercase">{language.code}</TableHead>
               ))}
               <TableHead className="w-24 text-right">Total</TableHead>
@@ -80,7 +76,7 @@ export function CategoriesPage(): ReactElement {
                   </div>
                   <div className="text-xs text-muted-foreground">{row.slug}</div>
                 </TableCell>
-                {LANGUAGES.map((language) => (
+                {languages.map((language) => (
                   <TableCell key={language.code} className="text-right tabular-nums text-muted-foreground">
                     {(row.byLanguage[language.code] ?? 0).toLocaleString()}
                   </TableCell>
@@ -114,16 +110,17 @@ export function CategoriesPage(): ReactElement {
   );
 }
 
-function NameFields({ names, onChange, disabled }: {
+function NameFields({ languages, names, onChange, disabled }: {
+  languages: Language[];
   names: Record<string, string>;
   onChange: (code: string, value: string) => void;
   disabled: boolean;
 }): ReactElement {
   return (
     <>
-      {LANGUAGES.map((language) => (
+      {languages.map((language) => (
         <div key={language.code} className="flex flex-col gap-1.5">
-          <Label htmlFor={`name-${language.code}`}>{language.label}</Label>
+          <Label htmlFor={`name-${language.code}`}>{language.name}</Label>
           <Input
             id={`name-${language.code}`}
             value={names[language.code] ?? ""}
@@ -138,9 +135,10 @@ function NameFields({ names, onChange, disabled }: {
 
 function CreateCategoryDialog({ onClose }: { onClose: () => void }): ReactElement {
   const create = useCreateCategory();
+  const languages = useLanguages().data ?? [];
   const [names, setNames] = useState<Record<string, string>>({});
   const [active, setActive] = useState(false);
-  const complete = LANGUAGES.every((language) => (names[language.code] ?? "").trim().length > 0);
+  const complete = languages.length > 0 && languages.every((language) => (names[language.code] ?? "").trim().length > 0);
 
   function submit(): void {
     create.mutate({ names, active }, { onSuccess: onClose });
@@ -155,6 +153,7 @@ function CreateCategoryDialog({ onClose }: { onClose: () => void }): ReactElemen
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <NameFields
+            languages={languages}
             names={names}
             disabled={create.isPending}
             onChange={(code, value) => setNames((prev) => ({ ...prev, [code]: value }))}
@@ -184,10 +183,9 @@ function CreateCategoryDialog({ onClose }: { onClose: () => void }): ReactElemen
 
 function EditCategoryDialog({ row, onClose }: { row: CategoryRow; onClose: () => void }): ReactElement {
   const update = useUpdateCategory();
-  const [names, setNames] = useState<Record<string, string>>(() =>
-    Object.fromEntries(LANGUAGES.map((language) => [language.code, row.names[language.code] ?? ""])),
-  );
-  const complete = LANGUAGES.every((language) => (names[language.code] ?? "").trim().length > 0);
+  const languages = useLanguages().data ?? [];
+  const [names, setNames] = useState<Record<string, string>>(() => ({ ...row.names }));
+  const complete = languages.length > 0 && languages.every((language) => (names[language.code] ?? "").trim().length > 0);
 
   function submit(): void {
     update.mutate({ slug: row.slug, names }, { onSuccess: onClose });
@@ -202,6 +200,7 @@ function EditCategoryDialog({ row, onClose }: { row: CategoryRow; onClose: () =>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <NameFields
+            languages={languages}
             names={names}
             disabled={update.isPending}
             onChange={(code, value) => setNames((prev) => ({ ...prev, [code]: value }))}

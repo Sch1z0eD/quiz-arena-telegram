@@ -132,6 +132,11 @@ export interface PhotoUpload {
   fileId: string;
 }
 
+export interface Language {
+  code: string;
+  name: string;
+}
+
 export interface GameSettings {
   questionsPerGame: number;
   questionSeconds: number;
@@ -393,6 +398,7 @@ export const api = {
     }),
   deleteCategory: (slug: string): Promise<void> =>
     request<void>(`/categories/${encodeURIComponent(slug)}`, { method: "DELETE" }),
+  listLanguages: (): Promise<Language[]> => request<Language[]>("/languages"),
   getSettings: (): Promise<GameSettings> => request<GameSettings>("/settings"),
   updateSettings: (settings: GameSettings): Promise<GameSettings> =>
     request<GameSettings>("/settings", {

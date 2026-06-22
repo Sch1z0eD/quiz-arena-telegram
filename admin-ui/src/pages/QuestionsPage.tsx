@@ -2,7 +2,7 @@ import { useState, type ReactElement } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Pencil, Plus, Power } from "lucide-react";
 import type { QuestionQuery } from "@/lib/api";
-import { useCategories, useQuestion, useQuestions, useSetQuestionActive } from "@/lib/queries";
+import { useCategories, useLanguages, useQuestion, useQuestions, useSetQuestionActive } from "@/lib/queries";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { categoryLabel, cn } from "@/lib/utils";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
-const LANGUAGES = ["en", "ru"];
 const ALL = "all";
 const PAGE_SIZE = 20;
 
@@ -25,6 +24,7 @@ export function QuestionsPage(): ReactElement {
   const navigate = useNavigate();
   const categories = useCategories();
   const toggle = useSetQuestionActive();
+  const languages = useLanguages().data ?? [];
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -78,7 +78,7 @@ export function QuestionsPage(): ReactElement {
           options={(categories.data ?? []).map((category) => ({ value: category.slug, label: categoryLabel(category) }))}
           onChange={(value) => setParam("category", value)} />
         <FilterSelect label="Difficulty" value={query.difficulty ?? ""} options={toOptions(DIFFICULTIES)} onChange={(value) => setParam("difficulty", value)} />
-        <FilterSelect label="Language" value={query.language ?? ""} options={toOptions(LANGUAGES)} onChange={(value) => setParam("language", value)} />
+        <FilterSelect label="Language" value={query.language ?? ""} options={toOptions(languages.map((language) => language.code))} onChange={(value) => setParam("language", value)} />
       </div>
 
       {questions.isError ? (
