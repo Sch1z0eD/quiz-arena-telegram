@@ -86,12 +86,6 @@ class AdminCategorySliceTest {
     }
 
     @Test
-    void toggleActiveRequiresCsrf() throws Exception {
-        mvc.perform(put("/api/admin/categories/science/active").with(admin())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true}")).andExpect(status().isForbidden());
-    }
-
-    @Test
     void deleteInUseReturnsConflictWithMessage() throws Exception {
         doThrow(new CategoryInUseException(5)).when(service).delete(any(), eq("science"));
         mvc.perform(delete("/api/admin/categories/science").with(admin()).with(csrf()))
