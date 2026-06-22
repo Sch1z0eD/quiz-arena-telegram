@@ -2,7 +2,6 @@ package com.quizarena.service;
 
 import com.quizarena.bot.BotIdentity;
 import com.quizarena.bot.DuelMessenger;
-import com.quizarena.config.DuelProperties;
 import com.quizarena.domain.DuelInvite;
 import com.quizarena.domain.OptionOrder;
 import com.quizarena.domain.Question;
@@ -14,6 +13,7 @@ import com.quizarena.repository.DuelStore;
 import com.quizarena.repository.GameStore;
 import com.quizarena.repository.InviteStore;
 import com.quizarena.repository.QuestionRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.scheduling.TaskScheduler;
@@ -45,7 +45,7 @@ class DuelServiceTest {
     private final AnswerRepository answers = mock(AnswerRepository.class);
     private final DuelRepository duels = mock(DuelRepository.class);
     private final TaskScheduler scheduler = mock(TaskScheduler.class);
-    private final DuelProperties properties = new DuelProperties(45, 20, 1, 100);
+    private final GameSettings settings = mock(GameSettings.class);
     private final LocaleService localeService = mock(LocaleService.class);
     private final EloService eloService = mock(EloService.class);
     private final AvatarService avatarService = mock(AvatarService.class);
@@ -55,7 +55,15 @@ class DuelServiceTest {
     private final OptionShuffler shuffler = mock(OptionShuffler.class);
 
     private final DuelService service = new DuelService(store, messenger, gameStore, questions, answers, duels,
-            scheduler, properties, localeService, eloService, avatarService, inviteStore, botIdentity, localizer, shuffler);
+            scheduler, settings, localeService, eloService, avatarService, inviteStore, botIdentity, localizer, shuffler);
+
+    @BeforeEach
+    void duelDefaults() {
+        lenient().when(settings.duelSearchSeconds()).thenReturn(45);
+        lenient().when(settings.duelQuestionSeconds()).thenReturn(20);
+        lenient().when(settings.duelQuestionCount()).thenReturn(1);
+        lenient().when(settings.duelBasePoints()).thenReturn(100);
+    }
 
     @Test
     void createInlineInviteUsesCallerAsBothUserAndChatWithAnyFilters() throws Exception {

@@ -2,7 +2,6 @@ package com.quizarena.service;
 
 import com.quizarena.bot.BotIdentity;
 import com.quizarena.bot.DuelMessenger;
-import com.quizarena.config.DuelProperties;
 import com.quizarena.domain.AnswerRecord;
 import com.quizarena.domain.DuelInvite;
 import com.quizarena.domain.DuelRecord;
@@ -46,7 +45,7 @@ public class DuelService {
     private final AnswerRepository answerRepository;
     private final DuelRepository duelRepository;
     private final TaskScheduler scheduler;
-    private final DuelProperties properties;
+    private final GameSettings settings;
     private final LocaleService localeService;
     private final EloService eloService;
     private final AvatarService avatarService;
@@ -60,7 +59,7 @@ public class DuelService {
 
     public DuelService(DuelStore store, DuelMessenger messenger, GameStore gameStore,
                        QuestionRepository questionRepository, AnswerRepository answerRepository,
-                       DuelRepository duelRepository, TaskScheduler scheduler, DuelProperties properties,
+                       DuelRepository duelRepository, TaskScheduler scheduler, GameSettings settings,
                        LocaleService localeService, EloService eloService, AvatarService avatarService,
                        InviteStore inviteStore, BotIdentity botIdentity, Localizer localizer, OptionShuffler shuffler) {
         this.store = store;
@@ -70,7 +69,7 @@ public class DuelService {
         this.answerRepository = answerRepository;
         this.duelRepository = duelRepository;
         this.scheduler = scheduler;
-        this.properties = properties;
+        this.settings = settings;
         this.localeService = localeService;
         this.eloService = eloService;
         this.avatarService = avatarService;
@@ -89,7 +88,7 @@ public class DuelService {
         String bucketCategory = bucket(category);
         String bucketDifficulty = bucket(difficulty);
         MatchOutcome outcome = store.matchOrEnqueue(locale.getLanguage(), bucketCategory, bucketDifficulty,
-                userId, chatId, messageId, name, properties.searchSeconds() + 15);
+                userId, chatId, messageId, name, settings.duelSearchSeconds() + 15);
         switch (outcome.status()) {
             case BUSY -> messenger.editBusy(chatId, messageId, locale);
             case QUEUED -> {
@@ -180,7 +179,7 @@ public class DuelService {
         boolean correct = snapshot.order().storageAt(option) == snapshot.correctOption();
         long points = correct
                 ? Scoring.speedBonus(snapshot.qStart(), System.currentTimeMillis(),
-                        properties.questionSeconds() * 1000L, properties.basePoints())
+                        settings.duelQuestionSeconds() * 1000L, settings.duelBasePoints())
                 : 0L;
         long chatId = userId == snapshot.userA() ? snapshot.chatA() : snapshot.chatB();
         answerRepository.save(new AnswerRecord(duelId, chatId, userId, snapshot.currentQuestionId(),
@@ -214,7 +213,7 @@ public class DuelService {
                            String category, String difficulty) throws TelegramApiException {
         cancelSearchTimeout(userB);
         List<Long> questionIds = questionRepository
-                .findRandomFiltered(category, difficulty, localeA.getLanguage(), properties.questionCount())
+                .findRandomFiltered(category, difficulty, localeA.getLanguage(), settings.duelQuestionCount())
                 .stream().map(Question::getId).toList();
         if (questionIds.isEmpty()) {
             messenger.editFailed(chatA, messageA, localeA);
@@ -237,7 +236,7 @@ public class DuelService {
         Locale inviterLocale = localeService.parse(invite.locale());
         List<Long> questionIds = questionRepository
                 .findRandomFiltered(invite.category(), invite.difficulty(), inviterLocale.getLanguage(),
-                        properties.questionCount())
+                        settings.duelQuestionCount())
                 .stream().map(Question::getId).toList();
         if (questionIds.isEmpty()) {
             store.clearBusy(invite.inviterUserId());
@@ -328,7 +327,7 @@ public class DuelService {
             } catch (Exception e) {
                 log.error("Duel timer failed for {}", duelId, e);
             }
-        }, Instant.now().plusSeconds(properties.questionSeconds()));
+        }, Instant.now().plusSeconds(settings.duelQuestionSeconds()));
         ScheduledFuture<?> previous = duelTimers.put(duelId, future);
         if (previous != null) {
             previous.cancel(false);
@@ -349,7 +348,7 @@ public class DuelService {
             if (store.cancelSearch(locale.getLanguage(), bucketCategory, bucketDifficulty, userId, chatId, messageId, name)) {
                 messenger.editFailed(chatId, messageId, locale);
             }
-        }, Instant.now().plusSeconds(properties.searchSeconds()));
+        }, Instant.now().plusSeconds(settings.duelSearchSeconds()));
         ScheduledFuture<?> previous = searchTimers.put(userId, future);
         if (previous != null) {
             previous.cancel(false);

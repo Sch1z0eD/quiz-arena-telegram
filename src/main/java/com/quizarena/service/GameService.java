@@ -1,7 +1,6 @@
 package com.quizarena.service;
 
 import com.quizarena.bot.GameMessenger;
-import com.quizarena.config.GameProperties;
 import com.quizarena.domain.AnswerRecord;
 import com.quizarena.domain.Difficulty;
 import com.quizarena.domain.GameMode;
@@ -44,7 +43,7 @@ public class GameService {
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final TaskScheduler scheduler;
-    private final GameProperties properties;
+    private final GameSettings settings;
     private final Localizer localizer;
     private final LocaleService localeService;
     private final EloService eloService;
@@ -53,7 +52,7 @@ public class GameService {
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> timers = new ConcurrentHashMap<>();
 
     public GameService(GameStore store, GameMessenger messenger, QuestionRepository questionRepository,
-                       AnswerRepository answerRepository, TaskScheduler scheduler, GameProperties properties,
+                       AnswerRepository answerRepository, TaskScheduler scheduler, GameSettings settings,
                        Localizer localizer, LocaleService localeService, EloService eloService,
                        AvatarService avatarService, OptionShuffler shuffler) {
         this.store = store;
@@ -61,7 +60,7 @@ public class GameService {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
         this.scheduler = scheduler;
-        this.properties = properties;
+        this.settings = settings;
         this.localizer = localizer;
         this.localeService = localeService;
         this.eloService = eloService;
@@ -74,18 +73,18 @@ public class GameService {
     }
 
     public boolean hasEnoughQuestions(String category, String difficulty, String language) {
-        return questionRepository.countFiltered(category, difficulty, language) >= properties.questionsPerGame();
+        return questionRepository.countFiltered(category, difficulty, language) >= settings.questionsPerGame();
     }
 
     public List<String> availableCategories(String language) {
-        return questionRepository.categoriesWithMinQuestions(language, properties.questionsPerGame())
+        return questionRepository.categoriesWithMinQuestions(language, settings.questionsPerGame())
                 .stream()
                 .sorted()
                 .toList();
     }
 
     public DifficultyOptions availableDifficulties(String category, String language) {
-        int min = properties.questionsPerGame();
+        int min = settings.questionsPerGame();
         List<String> present = questionRepository.difficultiesWithMinQuestions(category, language, min);
         List<String> ordered = new ArrayList<>();
         for (Difficulty difficulty : Difficulty.values()) {
@@ -111,7 +110,7 @@ public class GameService {
         }
         if (group) {
             store.createLobby(chatId, category, difficulty, locale.getLanguage());
-            int messageId = messenger.sendLobby(chatId, properties.lobbySeconds(), locale);
+            int messageId = messenger.sendLobby(chatId, settings.lobbySeconds(), locale);
             store.setLobbyMessageId(chatId, messageId);
             scheduleLobbyEnd(chatId);
         } else {
@@ -132,7 +131,7 @@ public class GameService {
             return JoinResult.ALREADY;
         }
         messenger.updateLobby(chatId, store.lobbyMessageId(chatId),
-                (int) store.rosterSize(chatId), properties.lobbySeconds(), localeService.parse(snapshot.locale()));
+                (int) store.rosterSize(chatId), settings.lobbySeconds(), localeService.parse(snapshot.locale()));
         return JoinResult.JOINED;
     }
 
@@ -261,13 +260,13 @@ public class GameService {
     }
 
     private List<Long> pickQuestionIds(String category, String difficulty, String language) {
-        return questionRepository.findRandomFiltered(category, difficulty, language, properties.questionsPerGame())
+        return questionRepository.findRandomFiltered(category, difficulty, language, settings.questionsPerGame())
                 .stream().map(Question::getId).toList();
     }
 
     private long speedBonus(long questionStartMillis) {
         return Scoring.speedBonus(questionStartMillis, System.currentTimeMillis(),
-                properties.questionSeconds() * 1000L, properties.basePoints());
+                settings.questionSeconds() * 1000L, settings.basePoints());
     }
 
     private void scheduleQuestionTimer(long chatId, long token) {
@@ -277,7 +276,7 @@ public class GameService {
             } catch (Exception e) {
                 log.error("Question timer failed in chat {}", chatId, e);
             }
-        }, properties.questionSeconds());
+        }, settings.questionSeconds());
     }
 
     private void scheduleLobbyEnd(long chatId) {
@@ -287,7 +286,7 @@ public class GameService {
             } catch (Exception e) {
                 log.error("Lobby timer failed in chat {}", chatId, e);
             }
-        }, properties.lobbySeconds());
+        }, settings.lobbySeconds());
     }
 
     private void schedule(long chatId, Runnable task, int delaySeconds) {
