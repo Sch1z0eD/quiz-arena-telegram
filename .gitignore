@@ -48,3 +48,6 @@ CLAUDE.md
 ### Local secrets - real deploy config (BOT_TOKEN). Keep .env.example tracked. ###
 .env
 !.env.example
+
+### Local dev profile - holds the developer's own Telegram id; never commit. ###
+src/main/resources/application-dev.properties
