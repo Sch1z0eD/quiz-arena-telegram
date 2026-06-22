@@ -35,7 +35,7 @@ class DuelMatchupCardRendererTest {
 
     @BeforeEach
     void stubCategoryNames() {
-        when(categoryService.name(anyString(), any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(categoryService.displayName(anyString(), any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -53,7 +53,7 @@ class DuelMatchupCardRendererTest {
 
     @Test
     void categoryNameFromDbRendersOnCard() {
-        when(categoryService.name("science", RU)).thenReturn("Наука-из-БД");
+        when(categoryService.displayName("science", RU)).thenReturn("Наука-из-БД");
         SvgCardRenderer spy = spy(svg);
         ArgumentCaptor<String> renderedSvg = ArgumentCaptor.forClass(String.class);
         doReturn(new byte[]{(byte) 0x89, (byte) 0x50}).when(spy).rasterize(renderedSvg.capture());

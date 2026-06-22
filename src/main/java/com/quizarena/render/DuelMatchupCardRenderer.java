@@ -36,16 +36,10 @@ public class DuelMatchupCardRenderer {
                 "ELO_A", Integer.toString(matchup.eloA()),
                 "NAME_B", svg.truncateToWidth(matchup.nameB(), NAME_FONT, NAME_MAX_WIDTH),
                 "ELO_B", Integer.toString(matchup.eloB()),
-                "CATEGORY", categoryLabel(matchup.category(), locale),
+                "CATEGORY", categoryService.displayName(matchup.category(), locale),
                 "DIFFICULTY", difficultyLabel(matchup.difficulty(), locale),
                 "LABEL_FOOTER", localizer.get(locale, "card.matchupFound"));
         return svg.rasterize(svg.fill(template, values));
-    }
-
-    private String categoryLabel(String slug, Locale locale) {
-        return slug == null || slug.isEmpty()
-                ? localizer.get(locale, "category.any")
-                : categoryService.name(slug, locale);
     }
 
     private String difficultyLabel(String value, Locale locale) {

@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,7 @@ public class DuelStore {
 
     // Shared id counter with GameStore so duelId and gameId never collide in answers.game_id.
     private static final String ID_SEQ = "quizarena:gameId";
+    private static final String TOKEN_SEQ = "quizarena:token";
     private static final Duration BUSY_TTL = Duration.ofMinutes(30);
 
     private final StringRedisTemplate redis;
@@ -49,7 +51,7 @@ public class DuelStore {
     }
 
     public long nextToken() {
-        Long value = redis.opsForValue().increment("quizarena:token");
+        Long value = redis.opsForValue().increment(TOKEN_SEQ);
         return value == null ? 0L : value;
     }
 
@@ -87,7 +89,7 @@ public class DuelStore {
                            long userB, long chatB, String nameB, String localeB,
                            List<Long> questionIds) {
         String ids = String.join(",", questionIds.stream().map(String::valueOf).toList());
-        Map<String, String> fields = new java.util.HashMap<>();
+        Map<String, String> fields = new HashMap<>();
         fields.put("qIds", ids);
         fields.put("total", Integer.toString(questionIds.size()));
         fields.put("qIndex", "-1");

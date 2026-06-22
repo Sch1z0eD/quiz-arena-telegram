@@ -25,7 +25,7 @@ public class ResultCardRenderer {
         String template = svg.loadTemplate("result_card.svg")
                 .replace("{{AVATAR}}", svg.avatarSlot(avatar, svg.initials(name), 78, 178, 40, "res"));
         Map<String, String> values = Map.ofEntries(
-                Map.entry("CATEGORY", categoryLabel(categorySlug, locale)),
+                Map.entry("CATEGORY", categoryService.displayName(categorySlug, locale)),
                 Map.entry("NAME", name),
                 Map.entry("PLACE", place == null
                         ? localizer.get(locale, "card.noPlace")
@@ -38,11 +38,5 @@ public class ResultCardRenderer {
                 Map.entry("LABEL_CORRECT", localizer.get(locale, "card.correct")),
                 Map.entry("LABEL_FOOTER", localizer.get(locale, "card.quizFinished")));
         return svg.rasterize(svg.fill(template, values));
-    }
-
-    private String categoryLabel(String slug, Locale locale) {
-        return slug == null || slug.isEmpty()
-                ? localizer.get(locale, "category.any")
-                : categoryService.name(slug, locale);
     }
 }

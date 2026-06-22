@@ -1,5 +1,6 @@
 package com.quizarena.bot;
 
+import com.quizarena.domain.Language;
 import com.quizarena.domain.PersonalRank;
 import com.quizarena.domain.Profile;
 import com.quizarena.domain.Standing;
@@ -8,7 +9,6 @@ import com.quizarena.handler.MessageBuilder;
 import com.quizarena.handler.UiTexts;
 import com.quizarena.render.BannerRenderer;
 import com.quizarena.render.LeaderboardCardRenderer;
-import com.quizarena.domain.Language;
 import com.quizarena.render.ProfileCardRenderer;
 import com.quizarena.service.CategoryService;
 import com.quizarena.service.LanguageRegistry;

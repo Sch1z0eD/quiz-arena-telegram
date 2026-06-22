@@ -35,7 +35,7 @@ public class DuelResultCardRenderer {
         template = template.replace("{{AVATAR_B}}",
                 svg.avatarSlot(result.avatarB(), svg.initials(result.nameB()), 499, 186, 42, "avB"));
         Map<String, String> values = Map.ofEntries(
-                Map.entry("CATEGORY", categoryLabel(result.categorySlug(), locale)),
+                Map.entry("CATEGORY", categoryService.displayName(result.categorySlug(), locale)),
                 Map.entry("NAME_A", svg.truncateToWidth(result.nameA(), NAME_FONT, NAME_MAX_WIDTH)),
                 Map.entry("SCORE_A", Long.toString(result.scoreA())),
                 Map.entry("RESULT_A", label(result.outcome(), true, locale)),
@@ -54,11 +54,5 @@ public class DuelResultCardRenderer {
         }
         boolean won = playerA ? outcome == DuelResult.Outcome.A_WINS : outcome == DuelResult.Outcome.B_WINS;
         return localizer.get(locale, won ? "card.result.win" : "card.result.lose");
-    }
-
-    private String categoryLabel(String slug, Locale locale) {
-        return slug == null || slug.isEmpty()
-                ? localizer.get(locale, "category.any")
-                : categoryService.name(slug, locale);
     }
 }

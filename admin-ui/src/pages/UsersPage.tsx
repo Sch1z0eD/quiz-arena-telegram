@@ -9,13 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/Pagination";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import { cn, formatTs } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
-
-function formatTs(ms: number): string {
-  return new Date(ms).toLocaleString();
-}
 
 function pct(value: number | null): string {
   return value === null ? "—" : `${value}%`;

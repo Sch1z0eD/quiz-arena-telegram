@@ -2,7 +2,6 @@ package com.quizarena.admin.web;
 
 import com.quizarena.admin.auth.VerifiedAdmin;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -27,7 +25,6 @@ import java.util.Set;
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
 public class AdminQuestionController {
 
-    private static final int MAX_PAGE_SIZE = 100;
     private static final Set<String> SORTABLE = Set.of("id", "category", "difficulty", "language");
 
     private final AdminQuestionService service;
@@ -43,7 +40,7 @@ public class AdminQuestionController {
             @RequestParam(required = false, defaultValue = "") String difficulty,
             @RequestParam(required = false, defaultValue = "") String language,
             @PageableDefault(size = 20) Pageable pageable) {
-        return service.list(q, category, difficulty, language, sanitize(pageable));
+        return service.list(q, category, difficulty, language, Pageables.sanitize(pageable, SORTABLE, Sort.by("id")));
     }
 
     @GetMapping("/questions/{id}")
@@ -69,13 +66,4 @@ public class AdminQuestionController {
         return service.setActive(admin, id, request.active());
     }
 
-    // Cap the page size and restrict sorting to known columns so request params cannot drive arbitrary queries.
-    private static Pageable sanitize(Pageable pageable) {
-        int size = Math.min(Math.max(pageable.getPageSize(), 1), MAX_PAGE_SIZE);
-        List<Sort.Order> orders = pageable.getSort().stream()
-                .filter(order -> SORTABLE.contains(order.getProperty()))
-                .toList();
-        Sort sort = orders.isEmpty() ? Sort.by("id") : Sort.by(orders);
-        return PageRequest.of(Math.max(pageable.getPageNumber(), 0), size, sort);
-    }
 }

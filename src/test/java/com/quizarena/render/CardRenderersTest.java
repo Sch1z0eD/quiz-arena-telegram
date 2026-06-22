@@ -42,7 +42,7 @@ class CardRenderersTest {
 
     @BeforeEach
     void stubCategoryNames() {
-        when(categoryService.name(anyString(), any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(categoryService.displayName(anyString(), any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -142,7 +142,7 @@ class CardRenderersTest {
 
     @Test
     void categoryNameFromDbRendersOnResultCard() {
-        when(categoryService.name("computers", RU)).thenReturn("Компьютеры-из-БД");
+        when(categoryService.displayName("computers", RU)).thenReturn("Компьютеры-из-БД");
         assertSvgContains(
                 spy -> new ResultCardRenderer(spy, localizer, categoryService)
                         .render("computers", "Иван", 320, 85, 17, 3L, null, RU),
@@ -151,7 +151,7 @@ class CardRenderersTest {
 
     @Test
     void categoryNameFromDbRendersOnDuelResultCard() {
-        when(categoryService.name("science", RU)).thenReturn("Наука-из-БД");
+        when(categoryService.displayName("science", RU)).thenReturn("Наука-из-БД");
         DuelResult result = new DuelResult("science", "Иван", 320, "Боб", 150,
                 DuelResult.Outcome.A_WINS, 1012, 12, 988, -12, null, null);
         assertSvgContains(

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/Pagination";
 import { QuestionFormDialog } from "@/components/QuestionFormDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { categoryLabel, cn } from "@/lib/utils";
+import { categoryLabel, cn, toOptions } from "@/lib/utils";
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 const ALL = "all";
@@ -206,9 +206,6 @@ function FilterSelect({ label, value, options, onChange }: {
   );
 }
 
-function toOptions(values: string[]): { value: string; label: string }[] {
-  return values.map((value) => ({ value, label: value }));
-}
 
 function SkeletonRows(): ReactElement {
   return (

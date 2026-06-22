@@ -1,7 +1,6 @@
 package com.quizarena.admin.web;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -20,7 +19,6 @@ import java.util.Set;
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
 public class AdminAuditController {
 
-    private static final int MAX_PAGE_SIZE = 100;
     private static final Set<String> SORTABLE = Set.of("ts", "action", "adminId", "id");
 
     private final AdminAuditService service;
@@ -37,7 +35,8 @@ public class AdminAuditController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @PageableDefault(size = 20, sort = "ts", direction = Sort.Direction.DESC) Pageable pageable) {
-        return service.list(action, adminId, target, from, to, sanitize(pageable));
+        return service.list(action, adminId, target, from, to,
+                Pageables.sanitize(pageable, SORTABLE, Sort.by(Sort.Order.desc("ts"))));
     }
 
     @GetMapping("/actions")
@@ -45,13 +44,4 @@ public class AdminAuditController {
         return service.actions();
     }
 
-    // Cap the page size and restrict sorting to known columns so request params cannot drive arbitrary queries.
-    private static Pageable sanitize(Pageable pageable) {
-        int size = Math.min(Math.max(pageable.getPageSize(), 1), MAX_PAGE_SIZE);
-        List<Sort.Order> orders = pageable.getSort().stream()
-                .filter(order -> SORTABLE.contains(order.getProperty()))
-                .toList();
-        Sort sort = orders.isEmpty() ? Sort.by(Sort.Order.desc("ts")) : Sort.by(orders);
-        return PageRequest.of(Math.max(pageable.getPageNumber(), 0), size, sort);
-    }
 }

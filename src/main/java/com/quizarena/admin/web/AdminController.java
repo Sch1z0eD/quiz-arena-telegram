@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/admin")
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
@@ -34,7 +36,7 @@ public class AdminController {
     }
 
     @GetMapping("/stats/answer-distribution")
-    public java.util.List<CategoryAnswerDistribution> answerDistribution() {
+    public List<CategoryAnswerDistribution> answerDistribution() {
         return stats.answerDistribution();
     }
 }

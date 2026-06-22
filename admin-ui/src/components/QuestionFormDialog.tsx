@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from "react";
 import type { QuestionDetail, QuestionInput } from "@/lib/api";
 import { useCategories, useCreateQuestion, useLanguages, useUpdateQuestion } from "@/lib/queries";
-import { categoryLabel } from "@/lib/utils";
+import { categoryLabel, toOptions } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -168,6 +168,3 @@ function FormSelect({ label, value, options, disabled, onChange }: {
   );
 }
 
-function toOptions(values: string[]): { value: string; label: string }[] {
-  return values.map((value) => ({ value, label: value }));
-}

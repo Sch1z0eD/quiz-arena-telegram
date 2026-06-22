@@ -72,7 +72,16 @@ export function SettingsPage(): ReactElement {
 
   function save(): void {
     if (!form) return;
-    const next = Object.fromEntries(FIELDS.map((f) => [f.key, Number(form[f.key])])) as unknown as GameSettings;
+    const next: GameSettings = {
+      questionsPerGame: Number(form.questionsPerGame),
+      questionSeconds: Number(form.questionSeconds),
+      basePoints: Number(form.basePoints),
+      lobbySeconds: Number(form.lobbySeconds),
+      duelSearchSeconds: Number(form.duelSearchSeconds),
+      duelQuestionSeconds: Number(form.duelQuestionSeconds),
+      duelQuestionCount: Number(form.duelQuestionCount),
+      duelBasePoints: Number(form.duelBasePoints),
+    };
     update.mutate(next);
   }
 

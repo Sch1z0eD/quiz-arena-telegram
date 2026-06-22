@@ -2,6 +2,7 @@ package com.quizarena.service;
 
 import com.quizarena.domain.CategoryEntity;
 import com.quizarena.domain.CategoryTranslation;
+import com.quizarena.i18n.Localizer;
 import com.quizarena.repository.CategoryRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,12 @@ import java.util.Map;
 public class CategoryService {
 
     private final CategoryRepository repository;
+    private final Localizer localizer;
     private volatile Map<String, Cached> bySlug = Map.of();
 
-    public CategoryService(CategoryRepository repository) {
+    public CategoryService(CategoryRepository repository, Localizer localizer) {
         this.repository = repository;
+        this.localizer = localizer;
     }
 
     @PostConstruct
@@ -43,6 +46,11 @@ public class CategoryService {
             return slug;
         }
         return cached.names().getOrDefault(locale.getLanguage(), slug);
+    }
+
+    // Display label for a (possibly absent) category filter: blank slug means "any".
+    public String displayName(String slug, Locale locale) {
+        return slug == null || slug.isEmpty() ? localizer.get(locale, "category.any") : name(slug, locale);
     }
 
     public boolean isEnabled(String slug) {

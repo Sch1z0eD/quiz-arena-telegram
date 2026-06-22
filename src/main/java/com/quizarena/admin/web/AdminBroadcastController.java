@@ -21,8 +21,6 @@ import org.springframework.web.server.ResponseStatusException;
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
 public class AdminBroadcastController {
 
-    private static final int MAX_PAGE_SIZE = 100;
-
     private final BroadcastService service;
 
     public AdminBroadcastController(BroadcastService service) {
@@ -63,7 +61,7 @@ public class AdminBroadcastController {
     public PageResponse<BroadcastSummary> history(
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int size) {
-        return service.history(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE));
+        return service.history(Math.max(page, 0), Math.min(Math.max(size, 1), Pageables.MAX_PAGE_SIZE));
     }
 
     @GetMapping("/{id}")

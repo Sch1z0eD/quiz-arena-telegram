@@ -9,3 +9,11 @@ export function cn(...inputs: ClassValue[]): string {
 export function categoryLabel(category: CategoryRow): string {
   return category.names.en ?? category.names.ru ?? category.slug;
 }
+
+export function formatTs(ms: number): string {
+  return new Date(ms).toLocaleString();
+}
+
+export function toOptions(values: string[]): { value: string; label: string }[] {
+  return values.map((value) => ({ value, label: value }));
+}

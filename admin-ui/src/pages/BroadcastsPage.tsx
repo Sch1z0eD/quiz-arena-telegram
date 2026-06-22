@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BroadcastPreview, type PreviewButton } from "@/components/BroadcastPreview";
+import { formatTs } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 const CAPTION_LIMIT = 1024;
@@ -44,10 +45,6 @@ interface UploadedPhoto {
 
 function isHttp(url: string): boolean {
   return /^https?:\/\//.test(url);
-}
-
-function formatTs(ms: number): string {
-  return new Date(ms).toLocaleString();
 }
 
 export function BroadcastsPage(): ReactElement {
@@ -103,11 +100,12 @@ export function BroadcastsPage(): ReactElement {
 
   const errors = useMemo(() => {
     const list: string[] = [];
-    const hasPhoto = !!message.photoUrl;
+    const photoUrl = message.photoUrl;
+    const hasPhoto = !!photoUrl;
     const maxLen = hasPhoto ? CAPTION_LIMIT : TEXT_LIMIT;
     if (!message.text) list.push("Text is required.");
     if (message.text.length > maxLen) list.push(`Text exceeds ${maxLen} characters (${hasPhoto ? "with photo" : "no photo"}).`);
-    if (hasPhoto && !uploadedPhoto && !isHttp(message.photoUrl as string)) list.push("Photo URL must be http(s).");
+    if (photoUrl && !uploadedPhoto && !isHttp(photoUrl)) list.push("Photo URL must be http(s).");
     if (buttons.length > MAX_BUTTON_ROWS) list.push(`Too many button rows (max ${MAX_BUTTON_ROWS}).`);
     if (buttons.some((row) => row.length > MAX_BUTTONS_PER_ROW)) list.push(`Too many buttons in a row (max ${MAX_BUTTONS_PER_ROW}).`);
     const flat = buttons.flat();
