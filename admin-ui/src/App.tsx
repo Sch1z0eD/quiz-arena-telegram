@@ -10,6 +10,7 @@ import { CategoriesPage } from "@/pages/CategoriesPage";
 import { AuditPage } from "@/pages/AuditPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { BroadcastsPage } from "@/pages/BroadcastsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
 
 function RequireAuth({ children }: { children: ReactElement }): ReactElement {
   const me = useMe();
@@ -40,6 +41,7 @@ export default function App(): ReactElement {
         <Route path="/audit" element={<AuditPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/broadcasts" element={<BroadcastsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

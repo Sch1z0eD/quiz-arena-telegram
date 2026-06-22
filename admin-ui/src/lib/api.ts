@@ -132,6 +132,17 @@ export interface PhotoUpload {
   fileId: string;
 }
 
+export interface GameSettings {
+  questionsPerGame: number;
+  questionSeconds: number;
+  basePoints: number;
+  lobbySeconds: number;
+  duelSearchSeconds: number;
+  duelQuestionSeconds: number;
+  duelQuestionCount: number;
+  duelBasePoints: number;
+}
+
 export interface QuestionStats {
   answered: number;
   correct: number;
@@ -382,4 +393,11 @@ export const api = {
     }),
   deleteCategory: (slug: string): Promise<void> =>
     request<void>(`/categories/${encodeURIComponent(slug)}`, { method: "DELETE" }),
+  getSettings: (): Promise<GameSettings> => request<GameSettings>("/settings"),
+  updateSettings: (settings: GameSettings): Promise<GameSettings> =>
+    request<GameSettings>("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    }),
 };

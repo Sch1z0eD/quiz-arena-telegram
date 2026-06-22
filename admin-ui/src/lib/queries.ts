@@ -15,6 +15,7 @@ import {
   type CategoryAnswerDistribution,
   type CategoryRow,
   type DryRunResult,
+  type GameSettings,
   type Me,
   type Overview,
   type PageResponse,
@@ -112,6 +113,18 @@ export function useBroadcastAbort(): UseMutationResult<void, Error, number> {
 
 export function useBroadcastPhotoUpload(): UseMutationResult<PhotoUpload, Error, File> {
   return useMutation({ mutationFn: (file) => api.uploadBroadcastPhoto(file) });
+}
+
+export function useGameSettings(): UseQueryResult<GameSettings> {
+  return useQuery({ queryKey: ["settings"], queryFn: api.getSettings });
+}
+
+export function useUpdateGameSettings(): UseMutationResult<GameSettings, Error, GameSettings> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (settings) => api.updateSettings(settings),
+    onSuccess: (data) => client.setQueryData(["settings"], data),
+  });
 }
 
 export function useSetUserBanned(): UseMutationResult<void, Error, { id: number; banned: boolean }> {
