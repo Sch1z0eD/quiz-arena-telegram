@@ -32,6 +32,24 @@ Type `/start` to begin; everything after that runs through inline menu buttons. 
 - Results, profile, and leaderboards are shown as rendered images rather than walls of text.
 - Russian and English UI, switchable from the menu. Questions are served in the player's language, and duels only pair players whose question language matches.
 
+## Admin panel
+
+The bot ships with a web admin panel — a separate React app in `admin-ui/` that talks to the backend over REST. It is off by default and only starts when `admin.panel.enabled=true`; without it the app stays a plain bot with no web server.
+
+What it does:
+
+- **Dashboard** — an overview: players and activity, games by mode, questions, answers per day, overall accuracy, top categories.
+- **Questions** — search and filters, create and edit, enable/disable; duplicates are rejected by a hash of the text.
+- **Categories** — per-language names, enable/disable, delete.
+- **Users** — a searchable list with stats, a player drawer, ban and unban (the bot stops replying to a banned user), and a marker for users who stopped the bot themselves.
+- **Broadcasts** — text with the HTML subset Telegram supports, a photo by URL or uploaded from disk, link buttons in rows; a live preview; a dry-run with a recipient count and a type-the-number confirmation; a test send to yourself; "all" or "by-language" segments; rate limiting and abort; history with progress.
+- **Game settings** — gameplay parameters (questions per game, timer durations, base points, lobby, duel settings) are edited from the panel without a redeploy, within set bounds.
+- **Audit** — a filterable log of admin actions.
+
+Sign-in is the official Telegram Login widget: the payload is signed and verified by HMAC on the server, and only Telegram accounts in `admin.panel.admins` are allowed. The session lives in an HttpOnly cookie and mutating requests are protected by a CSRF token. The widget needs a public domain bound to the bot via @BotFather (`/setdomain`) — it does not work on `localhost`, so a dev-login button is available for local development (the `dev` profile).
+
+Frontend stack — React, Vite, TypeScript, Tailwind, shadcn/ui, TanStack Query. Details and commands are in [`admin-ui/README.md`](admin-ui/README.md).
+
 ## How it works
 
 ```mermaid
@@ -102,6 +120,38 @@ $env:BOT_TOKEN="your-token-here"
 Postgres and Redis connection settings live in `application.properties`: the host and port come from `DB_HOST`/`DB_PORT`/`REDIS_HOST`/`REDIS_PORT` (defaulting to `localhost`), and Compose points them at the service names `postgres`/`redis`.
 
 Russian questions ship in the migrations and load on first startup. English questions can be imported once from [Open Trivia DB](https://opentdb.com/) by running the app with `IMPORT_ENABLED=true`. The import is idempotent — running it again won't create duplicates.
+
+### Admin panel
+
+With the panel enabled the backend becomes a web app and listens on port `8080`.
+
+Linux / macOS:
+
+```bash
+export BOT_TOKEN="your-token-here"
+export SPRING_PROFILES_ACTIVE=dev
+./gradlew bootRun
+```
+
+Windows (PowerShell):
+
+```powershell
+$env:BOT_TOKEN="your-token-here"
+$env:SPRING_PROFILES_ACTIVE="dev"
+.\gradlew.bat bootRun
+```
+
+The `dev` profile enables the panel and dev login and puts id `1` in the admins list — set your own Telegram id in `admin.panel.admins` (`application-dev.properties`). Without the profile, set `admin.panel.enabled=true` and `admin.panel.admins=<your id>` yourself.
+
+The frontend runs separately:
+
+```bash
+cd admin-ui
+npm install
+npm run dev
+```
+
+The dev server at `http://localhost:5173` proxies `/api` to the backend (`:8080`). Commands and environment variables are in [`admin-ui/README.md`](admin-ui/README.md).
 
 ## Layout
 
