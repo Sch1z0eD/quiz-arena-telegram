@@ -20,6 +20,10 @@ public class Localizer {
         return messageSource.getMessage(key, args, locale);
     }
 
+    public String getOrDefault(Locale locale, String key, String defaultMessage) {
+        return messageSource.getMessage(key, null, defaultMessage, locale);
+    }
+
     public String plural(Locale locale, String nounKey, long count) {
         return messageSource.getMessage(nounKey + "." + plurals.form(locale, count), new Object[]{count}, locale);
     }

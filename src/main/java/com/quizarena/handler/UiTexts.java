@@ -111,7 +111,9 @@ public class UiTexts {
         return localizer.get(locale, "scope." + scope.name());
     }
 
-    public String languageName(String code, Locale locale) {
-        return localizer.get(locale, "lang." + code);
+    // Falls back to the registry-provided name when no lang.<code> bundle key exists, so a newly registered
+    // language never crashes the picker.
+    public String languageName(String code, Locale locale, String fallback) {
+        return localizer.getOrDefault(locale, "lang." + code, fallback);
     }
 }

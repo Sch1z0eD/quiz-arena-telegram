@@ -28,9 +28,11 @@ public class MenuService {
     private final LocaleService localeService;
     private final AvatarService avatarService;
     private final CategoryService categoryService;
+    private final LanguageRegistry languageRegistry;
 
     public MenuService(GameService gameService, MenuMessenger menuMessenger, UiTexts texts, DuelService duelService,
-                       LocaleService localeService, AvatarService avatarService, CategoryService categoryService) {
+                       LocaleService localeService, AvatarService avatarService, CategoryService categoryService,
+                       LanguageRegistry languageRegistry) {
         this.gameService = gameService;
         this.menuMessenger = menuMessenger;
         this.texts = texts;
@@ -38,6 +40,7 @@ public class MenuService {
         this.localeService = localeService;
         this.avatarService = avatarService;
         this.categoryService = categoryService;
+        this.languageRegistry = languageRegistry;
     }
 
     public void openMenu(long chatId, boolean privateChat, Locale locale) throws TelegramApiException {
@@ -114,9 +117,13 @@ public class MenuService {
             }
             case "lang" -> menuMessenger.editLanguageMenu(chatId, messageId, locale);
             case "setlang" -> {
-                String language = parts.length > 2 ? parts[2] : "en";
-                localeService.setLanguage(userId, language);
-                menuMessenger.editMainMenu(chatId, messageId, localeService.parse(language));
+                String language = parts.length > 2 ? parts[2] : "";
+                if (languageRegistry.isEnabled(language)) {
+                    localeService.setLanguage(userId, language);
+                    menuMessenger.editMainMenu(chatId, messageId, localeService.parse(language));
+                } else {
+                    menuMessenger.editMainMenu(chatId, messageId, locale);
+                }
             }
             case "duel" -> menuMessenger.editDuelCategories(chatId, messageId, orderedCategories(locale), 0, chatId > 0, locale);
             case "dcatpg" -> menuMessenger.editDuelCategories(chatId, messageId, orderedCategories(locale),

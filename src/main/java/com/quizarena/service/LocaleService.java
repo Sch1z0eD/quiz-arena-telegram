@@ -12,16 +12,18 @@ import java.util.Optional;
 @Service
 public class LocaleService {
 
-    private static final Locale RU = Locale.of("ru");
-    private static final Locale EN = Locale.of("en");
+    private static final Locale DEFAULT_LOCALE = Locale.of("en");
+    private static final String DEFAULT_LANGUAGE = "en";
     private static final Duration CACHE_TTL = Duration.ofDays(1);
 
     private final UserSettingsRepository repository;
     private final StringRedisTemplate redis;
+    private final LanguageRegistry registry;
 
-    public LocaleService(UserSettingsRepository repository, StringRedisTemplate redis) {
+    public LocaleService(UserSettingsRepository repository, StringRedisTemplate redis, LanguageRegistry registry) {
         this.repository = repository;
         this.redis = redis;
+        this.registry = registry;
     }
 
     public Locale resolve(long userId, String telegramLanguageCode) {
@@ -42,11 +44,18 @@ public class LocaleService {
     }
 
     public Locale parse(String language) {
-        return "ru".equals(language) ? RU : EN;
+        return language == null || language.isBlank() ? DEFAULT_LOCALE : Locale.of(language);
     }
 
-    private static String defaultLanguage(String telegramLanguageCode) {
-        return telegramLanguageCode != null && telegramLanguageCode.toLowerCase().startsWith("ru") ? "ru" : "en";
+    // The user's Telegram language wins only if we actually offer it; otherwise fall back to the default.
+    private String defaultLanguage(String telegramLanguageCode) {
+        if (telegramLanguageCode != null) {
+            String base = telegramLanguageCode.toLowerCase().split("[-_]", 2)[0];
+            if (registry.isEnabled(base)) {
+                return base;
+            }
+        }
+        return DEFAULT_LANGUAGE;
     }
 
     private static String key(long userId) {

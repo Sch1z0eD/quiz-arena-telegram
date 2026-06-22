@@ -8,8 +8,10 @@ import com.quizarena.handler.MessageBuilder;
 import com.quizarena.handler.UiTexts;
 import com.quizarena.render.BannerRenderer;
 import com.quizarena.render.LeaderboardCardRenderer;
+import com.quizarena.domain.Language;
 import com.quizarena.render.ProfileCardRenderer;
 import com.quizarena.service.CategoryService;
+import com.quizarena.service.LanguageRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -49,10 +51,12 @@ public class MenuMessenger {
     private final ProfileCardRenderer profileCardRenderer;
     private final LeaderboardCardRenderer leaderboardCardRenderer;
     private final CategoryService categoryService;
+    private final LanguageRegistry languageRegistry;
 
     public MenuMessenger(TelegramClient telegramClient, UiTexts texts, MessageBuilder messageBuilder,
                          BannerRenderer bannerRenderer, ProfileCardRenderer profileCardRenderer,
-                         LeaderboardCardRenderer leaderboardCardRenderer, CategoryService categoryService) {
+                         LeaderboardCardRenderer leaderboardCardRenderer, CategoryService categoryService,
+                         LanguageRegistry languageRegistry) {
         this.telegramClient = telegramClient;
         this.texts = texts;
         this.messageBuilder = messageBuilder;
@@ -60,6 +64,7 @@ public class MenuMessenger {
         this.profileCardRenderer = profileCardRenderer;
         this.leaderboardCardRenderer = leaderboardCardRenderer;
         this.categoryService = categoryService;
+        this.languageRegistry = languageRegistry;
     }
 
     public void sendMainMenu(long chatId, Locale locale) throws TelegramApiException {
@@ -308,10 +313,20 @@ public class MenuMessenger {
     }
 
     private InlineKeyboardMarkup languageMarkup(Locale locale) {
-        return InlineKeyboardMarkup.builder().keyboard(List.of(
-                new InlineKeyboardRow(button(texts.languageName("ru", locale), "m:setlang:ru"),
-                        button(texts.languageName("en", locale), "m:setlang:en")),
-                new InlineKeyboardRow(button(texts.btnBack(locale), "m:home")))).build();
+        List<InlineKeyboardRow> rows = new ArrayList<>();
+        InlineKeyboardRow row = new InlineKeyboardRow();
+        for (Language language : languageRegistry.enabled()) {
+            row.add(button(texts.languageName(language.code(), locale, language.name()), "m:setlang:" + language.code()));
+            if (row.size() == 2) {
+                rows.add(row);
+                row = new InlineKeyboardRow();
+            }
+        }
+        if (!row.isEmpty()) {
+            rows.add(row);
+        }
+        rows.add(new InlineKeyboardRow(button(texts.btnBack(locale), "m:home")));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
     private InlineKeyboardMarkup backToMenuMarkup(Locale locale) {
