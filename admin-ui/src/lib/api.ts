@@ -285,6 +285,12 @@ export const api = {
     return request<PageResponse<UserRow>>(`/users?${params.toString()}`);
   },
   getUser: (id: number): Promise<UserDetail> => request<UserDetail>(`/users/${id}`),
+  setUserBanned: (id: number, banned: boolean): Promise<void> =>
+    request<void>(`/users/${id}/banned`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banned }),
+    }),
   listCategories: (): Promise<CategoryRow[]> => request<CategoryRow[]>("/categories"),
   createCategory: (names: Record<string, string>, active: boolean): Promise<CategoryRow> =>
     request<CategoryRow>("/categories", {

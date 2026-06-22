@@ -58,6 +58,19 @@ export function useUser(id: number | null): UseQueryResult<UserDetail> {
   });
 }
 
+export function useSetUserBanned(): UseMutationResult<void, Error, { id: number; banned: boolean }> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, banned }) => api.setUserBanned(id, banned),
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["users"] }),
+        client.invalidateQueries({ queryKey: ["user"] }),
+      ]);
+    },
+  });
+}
+
 export function useQuestions(query: QuestionQuery): UseQueryResult<PageResponse<QuestionSummary>> {
   return useQuery({
     queryKey: ["questions", query],

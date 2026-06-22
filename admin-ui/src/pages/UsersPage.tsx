@@ -1,7 +1,8 @@
 import { useState, type ReactElement } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { UserQuery } from "@/lib/api";
-import { useUser, useUsers } from "@/lib/queries";
+import { useSetUserBanned, useUser, useUsers } from "@/lib/queries";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,7 +94,12 @@ export function UsersPage(): ReactElement {
                 usersList.data.content.map((user) => (
                   <TableRow key={user.id} className="cursor-pointer" onClick={() => setSelectedId(user.id)}>
                     <TableCell className="text-right tabular-nums text-muted-foreground">{user.id}</TableCell>
-                    <TableCell>{user.name ?? "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{user.name ?? "—"}</span>
+                        {user.banned ? <Badge variant="outline">Banned</Badge> : null}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{user.username ? `@${user.username}` : "—"}</TableCell>
                     <TableCell className="uppercase text-muted-foreground">{user.language ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{user.games.toLocaleString()}</TableCell>
@@ -127,6 +133,8 @@ export function UsersPage(): ReactElement {
 
 function UserDetailPanel({ id }: { id: number }): ReactElement {
   const detail = useUser(id);
+  const ban = useSetUserBanned();
+  const [confirming, setConfirming] = useState(false);
 
   if (detail.isPending) {
     return <Skeleton className="h-64 w-full" />;
@@ -139,11 +147,38 @@ function UserDetailPanel({ id }: { id: number }): ReactElement {
   return (
     <>
       <SheetHeader>
-        <SheetTitle>{u.name ?? `User ${u.id}`}</SheetTitle>
+        <div className="flex items-center gap-2">
+          <SheetTitle>{u.name ?? `User ${u.id}`}</SheetTitle>
+          {u.banned ? <Badge variant="outline">Banned</Badge> : null}
+        </div>
         <SheetDescription>
           {u.username ? `@${u.username} · ` : ""}id {u.id}{u.language ? ` · ${u.language.toUpperCase()}` : ""}
         </SheetDescription>
       </SheetHeader>
+
+      <div>
+        {confirming ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {u.banned ? "Unban — the bot will respond again." : "Ban — the bot will silently ignore this user."}
+            </span>
+            <Button variant="outline" size="sm" disabled={ban.isPending} onClick={() => setConfirming(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              className={u.banned ? "" : "bg-destructive text-destructive-foreground hover:opacity-90"}
+              disabled={ban.isPending}
+              onClick={() => ban.mutate({ id: u.id, banned: !u.banned }, { onSuccess: () => setConfirming(false) })}
+            >
+              {ban.isPending ? "Saving…" : u.banned ? "Confirm unban" : "Confirm ban"}
+            </Button>
+          </div>
+        ) : (
+          <Button variant={u.banned ? "outline" : "destructive"} size="sm" onClick={() => setConfirming(true)}>
+            {u.banned ? "Unban" : "Ban"}
+          </Button>
+        )}
+        {ban.isError ? <p className="mt-2 text-sm text-destructive">{ban.error.message}</p> : null}
+      </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <Stat label="Games (solo/group)" value={u.games.toLocaleString()} />
