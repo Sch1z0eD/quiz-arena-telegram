@@ -4,12 +4,16 @@ import com.quizarena.admin.audit.AuditService;
 import com.quizarena.admin.auth.VerifiedAdmin;
 import com.quizarena.domain.CategoryEntity;
 import com.quizarena.domain.CategoryTranslation;
+import com.quizarena.domain.Language;
 import com.quizarena.repository.CategoryRepository;
 import com.quizarena.repository.QuestionRepository;
 import com.quizarena.service.CategoryService;
+import com.quizarena.service.LanguageRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -22,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,8 +40,15 @@ class AdminCategoryServiceTest {
     private final QuestionRepository questions = mock(QuestionRepository.class);
     private final CategoryService categoryService = mock(CategoryService.class);
     private final AuditService audit = mock(AuditService.class);
+    private final LanguageRegistry languageRegistry = mock(LanguageRegistry.class);
     private final AdminCategoryService service =
-            new AdminCategoryService(categories, questions, categoryService, audit);
+            new AdminCategoryService(categories, questions, categoryService, audit, languageRegistry);
+
+    @BeforeEach
+    void enableSeededLanguages() {
+        lenient().when(languageRegistry.enabled())
+                .thenReturn(List.of(new Language("en", "English"), new Language("ru", "Русский")));
+    }
 
     @Test
     void createInactiveByDefaultPersistsAuditsAndRefreshes() {

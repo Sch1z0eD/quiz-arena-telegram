@@ -6,7 +6,9 @@ import com.quizarena.domain.Question;
 import com.quizarena.repository.AnswerRepository;
 import com.quizarena.repository.CategoryRepository;
 import com.quizarena.repository.QuestionRepository;
+import com.quizarena.service.LanguageRegistry;
 import com.quizarena.service.QuestionHash;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -23,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,7 +39,15 @@ class AdminQuestionServiceTest {
     private final AnswerRepository answers = mock(AnswerRepository.class);
     private final CategoryRepository categories = mock(CategoryRepository.class);
     private final AuditService audit = mock(AuditService.class);
-    private final AdminQuestionService service = new AdminQuestionService(questions, answers, categories, audit);
+    private final LanguageRegistry languageRegistry = mock(LanguageRegistry.class);
+    private final AdminQuestionService service =
+            new AdminQuestionService(questions, answers, categories, audit, languageRegistry);
+
+    @BeforeEach
+    void enableSeededLanguages() {
+        lenient().when(languageRegistry.isEnabled("en")).thenReturn(true);
+        lenient().when(languageRegistry.isEnabled("ru")).thenReturn(true);
+    }
 
     @Test
     void detailComputesAccuracyFromAnswers() {

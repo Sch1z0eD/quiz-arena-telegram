@@ -7,6 +7,7 @@ import com.quizarena.domain.Question;
 import com.quizarena.repository.AnswerRepository;
 import com.quizarena.repository.CategoryRepository;
 import com.quizarena.repository.QuestionRepository;
+import com.quizarena.service.LanguageRegistry;
 import com.quizarena.service.QuestionHash;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
@@ -31,19 +32,20 @@ public class AdminQuestionService {
     private static final int MAX_OPTION_LENGTH = 200;
     private static final Set<String> DIFFICULTIES =
             Arrays.stream(Difficulty.values()).map(Difficulty::value).collect(Collectors.toUnmodifiableSet());
-    private static final Set<String> LANGUAGES = Set.of("en", "ru");
 
     private final QuestionRepository questions;
     private final AnswerRepository answers;
     private final CategoryRepository categories;
     private final AuditService audit;
+    private final LanguageRegistry languageRegistry;
 
     public AdminQuestionService(QuestionRepository questions, AnswerRepository answers,
-                                CategoryRepository categories, AuditService audit) {
+                                CategoryRepository categories, AuditService audit, LanguageRegistry languageRegistry) {
         this.questions = questions;
         this.answers = answers;
         this.categories = categories;
         this.audit = audit;
+        this.languageRegistry = languageRegistry;
     }
 
     public PageResponse<QuestionSummary> list(String text, String category, String difficulty,
@@ -140,7 +142,7 @@ public class AdminQuestionService {
             throw new IllegalArgumentException("unsupported difficulty");
         }
         String language = request.language() == null ? "" : request.language().trim();
-        if (!LANGUAGES.contains(language)) {
+        if (!languageRegistry.isEnabled(language)) {
             throw new IllegalArgumentException("unsupported language");
         }
         return new Validated(text, trimmed, request.correctOption(), category, difficulty, language);

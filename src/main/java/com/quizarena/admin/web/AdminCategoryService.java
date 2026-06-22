@@ -4,9 +4,11 @@ import com.quizarena.admin.audit.AuditService;
 import com.quizarena.admin.auth.VerifiedAdmin;
 import com.quizarena.domain.CategoryEntity;
 import com.quizarena.domain.CategoryTranslation;
+import com.quizarena.domain.Language;
 import com.quizarena.repository.CategoryRepository;
 import com.quizarena.repository.QuestionRepository;
 import com.quizarena.service.CategoryService;
+import com.quizarena.service.LanguageRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,20 +27,21 @@ import java.util.TreeMap;
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
 public class AdminCategoryService {
 
-    private static final List<String> LANGUAGES = List.of("ru", "en");
     private static final int MAX_NAME_LENGTH = 128;
 
     private final CategoryRepository categories;
     private final QuestionRepository questions;
     private final CategoryService categoryService;
     private final AuditService audit;
+    private final LanguageRegistry languageRegistry;
 
     public AdminCategoryService(CategoryRepository categories, QuestionRepository questions,
-                                CategoryService categoryService, AuditService audit) {
+                                CategoryService categoryService, AuditService audit, LanguageRegistry languageRegistry) {
         this.categories = categories;
         this.questions = questions;
         this.categoryService = categoryService;
         this.audit = audit;
+        this.languageRegistry = languageRegistry;
     }
 
     @Transactional(readOnly = true)
@@ -122,16 +125,17 @@ public class AdminCategoryService {
             throw new IllegalArgumentException("names are required");
         }
         Map<String, String> result = new LinkedHashMap<>();
-        for (String language : LANGUAGES) {
-            String name = names.get(language);
+        for (Language language : languageRegistry.enabled()) {
+            String code = language.code();
+            String name = names.get(code);
             if (name == null || name.isBlank()) {
-                throw new IllegalArgumentException("name for '" + language + "' is required");
+                throw new IllegalArgumentException("name for '" + code + "' is required");
             }
             String trimmed = name.trim();
             if (trimmed.length() > MAX_NAME_LENGTH) {
-                throw new IllegalArgumentException("name for '" + language + "' exceeds " + MAX_NAME_LENGTH + " characters");
+                throw new IllegalArgumentException("name for '" + code + "' exceeds " + MAX_NAME_LENGTH + " characters");
             }
-            result.put(language, trimmed);
+            result.put(code, trimmed);
         }
         return result;
     }
