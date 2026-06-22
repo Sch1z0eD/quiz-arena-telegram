@@ -1,6 +1,19 @@
 # syntax=docker/dockerfile:1
 
-# ---- build stage ----
+# ---- frontend build stage ----
+# Builds the admin UI to static assets. VITE_BOT_USERNAME is compiled into the bundle here (vite build runs
+# in production mode and ignores .env.development), so it must arrive as a build arg. Same-origin: VITE_API_BASE
+# is empty, so the panel calls /api/... on whatever host serves it.
+FROM node:22 AS web
+WORKDIR /web
+COPY admin-ui/package.json admin-ui/package-lock.json ./
+RUN npm ci
+COPY admin-ui/ ./
+ARG VITE_BOT_USERNAME=""
+ENV VITE_API_BASE=""
+RUN VITE_BOT_USERNAME="$VITE_BOT_USERNAME" npm run build
+
+# ---- backend build stage ----
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
@@ -12,6 +25,9 @@ RUN chmod +x gradlew && ./gradlew --no-daemon dependencies
 
 # Then the sources, which change far more often than the dependency set.
 COPY src ./src
+# Bundle the built admin UI into the jar (classpath:/static). Served only when the panel is enabled;
+# in bot-only mode it sits unused.
+COPY --from=web /web/dist ./src/main/resources/static
 RUN ./gradlew --no-daemon clean bootJar
 
 # ---- runtime stage ----
@@ -29,5 +45,7 @@ WORKDIR /app
 COPY --from=build --chown=app:app /app/build/libs/*.jar /app/app.jar
 USER app
 
-# No EXPOSE: the bot uses long polling (outbound only). BOT_TOKEN is supplied at runtime, never baked in.
+# Only listened on when the admin panel is enabled; the bot itself uses long polling (outbound only).
+# BOT_TOKEN is supplied at runtime, never baked in.
+EXPOSE 8080
 ENTRYPOINT ["java", "-Djava.awt.headless=true", "-jar", "/app/app.jar"]

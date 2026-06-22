@@ -2,15 +2,25 @@ name: quizarena
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # Compiled into the admin UI bundle at build time; change it -> rebuild the image.
+        VITE_BOT_USERNAME: ${VITE_BOT_USERNAME:-}
     image: quizarena-app
     container_name: quizarena-app
+    # Only used when the admin panel is enabled; harmless (nothing listens) for a bot-only deploy.
+    ports:
+      - "8080:8080"
     environment:
       # Reach Postgres and Redis by service name, not localhost. The app builds its datasource URL
       # from DB_HOST/DB_PORT (defaults in application.properties), so only the host needs overriding.
       DB_HOST: postgres
       REDIS_HOST: redis
       BOT_TOKEN: ${BOT_TOKEN}
+      # Admin panel, off by default. Set ADMIN_PANEL_ENABLED=true and ADMIN_PANEL_ADMINS to turn it on.
+      ADMIN_PANEL_ENABLED: ${ADMIN_PANEL_ENABLED:-false}
+      ADMIN_PANEL_ADMINS: ${ADMIN_PANEL_ADMINS:-}
     depends_on:
       postgres:
         condition: service_healthy

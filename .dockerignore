@@ -4,6 +4,10 @@ build/
 out/
 bin/
 
+# Frontend deps and build output (admin-ui sources are copied; these are rebuilt in the image)
+admin-ui/node_modules/
+admin-ui/dist/
+
 # VCS and IDE
 .git/
 .github/
