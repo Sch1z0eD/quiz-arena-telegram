@@ -57,12 +57,6 @@ public class GameStore {
         return Boolean.TRUE.equals(redis.hasKey(gameKey(chatId)));
     }
 
-    // Reads the matchmaking busy flag written by DuelStore (shared Redis key) for the solo-vs-duel
-    // mutual exclusion: a private chat must not run a solo game while the user is in a duel/search.
-    public boolean isDuelBusy(long userId) {
-        return Boolean.TRUE.equals(redis.hasKey("mm:busy:" + userId));
-    }
-
     public GameState state(long chatId) {
         String value = hash().get(gameKey(chatId), "state");
         return value == null ? null : GameState.valueOf(value);

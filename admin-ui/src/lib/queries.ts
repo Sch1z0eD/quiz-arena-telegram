@@ -25,7 +25,6 @@ import {
   type QuestionInput,
   type QuestionQuery,
   type QuestionSummary,
-  type Stats,
   type UserDetail,
   type UserQuery,
   type UserRow,
@@ -33,10 +32,6 @@ import {
 
 export function useMe(): UseQueryResult<Me> {
   return useQuery({ queryKey: ["me"], queryFn: api.me, retry: false });
-}
-
-export function useStats(): UseQueryResult<Stats> {
-  return useQuery({ queryKey: ["stats"], queryFn: api.stats });
 }
 
 export function useOverview(): UseQueryResult<Overview> {

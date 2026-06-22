@@ -65,7 +65,7 @@ public class DuelMessenger {
         editStatus(chatId, messageId, texts.duelBusy(locale), noKeyboard());
     }
 
-    public void editFound(long chatId, int messageId, Locale locale) {
+    private void editFound(long chatId, int messageId, Locale locale) {
         editStatus(chatId, messageId, texts.duelSearchFound(locale), noKeyboard());
     }
 

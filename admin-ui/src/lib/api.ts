@@ -5,11 +5,6 @@ export interface Me {
   name: string;
 }
 
-export interface Stats {
-  questions: number;
-  answers: number;
-}
-
 export interface NamedCount {
   name: string;
   count: number;
@@ -293,7 +288,6 @@ function auditQuery(query: AuditQuery): string {
 
 export const api = {
   me: (): Promise<Me> => request<Me>("/me"),
-  stats: (): Promise<Stats> => request<Stats>("/stats"),
   overview: (): Promise<Overview> => request<Overview>("/stats/overview"),
   answerDistribution: (): Promise<CategoryAnswerDistribution[]> =>
     request<CategoryAnswerDistribution[]>("/stats/answer-distribution"),
