@@ -99,6 +99,35 @@ export interface QuestionInput {
   language: string;
 }
 
+export interface BroadcastButton {
+  text: string;
+  url: string;
+}
+
+export interface BroadcastMessage {
+  text: string;
+  photoUrl?: string;
+  button?: BroadcastButton;
+}
+
+export interface BroadcastSummary {
+  id: number;
+  adminId: number;
+  createdAt: number;
+  segment: string;
+  language: string | null;
+  status: string;
+  sent: number;
+  failed: number;
+  total: number;
+}
+
+export interface DryRunResult {
+  id: number;
+  total: number;
+  token: string;
+}
+
 export interface QuestionStats {
   answered: number;
   correct: number;
@@ -184,10 +213,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     throw new ApiError(response.status, await errorMessage(response, method, path));
   }
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  return (await response.json()) as T;
+  // Tolerate empty bodies (204, or 202 Accepted from async endpoints like broadcast start).
+  const body = await response.text();
+  return (body ? JSON.parse(body) : undefined) as T;
 }
 
 async function errorMessage(response: Response, method: string, path: string): Promise<string> {
@@ -291,6 +319,29 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ banned }),
     }),
+  broadcastTest: (message: BroadcastMessage): Promise<BroadcastSummary> =>
+    request<BroadcastSummary>("/broadcasts/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+    }),
+  broadcastDryRun: (segment: string, language: string | undefined, message: BroadcastMessage): Promise<DryRunResult> =>
+    request<DryRunResult>("/broadcasts/dry-run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...message, segment, language }),
+    }),
+  broadcastStart: (id: number, token: string): Promise<void> =>
+    request<void>(`/broadcasts/${id}/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    }),
+  broadcastAbort: (id: number): Promise<void> =>
+    request<void>(`/broadcasts/${id}/abort`, { method: "POST" }),
+  listBroadcasts: (page: number, size: number): Promise<PageResponse<BroadcastSummary>> =>
+    request<PageResponse<BroadcastSummary>>(`/broadcasts?page=${page}&size=${size}`),
+  getBroadcast: (id: number): Promise<BroadcastSummary> => request<BroadcastSummary>(`/broadcasts/${id}`),
   listCategories: (): Promise<CategoryRow[]> => request<CategoryRow[]>("/categories"),
   createCategory: (names: Record<string, string>, active: boolean): Promise<CategoryRow> =>
     request<CategoryRow>("/categories", {

@@ -10,8 +10,11 @@ import {
   api,
   type AuditEntry,
   type AuditQuery,
+  type BroadcastMessage,
+  type BroadcastSummary,
   type CategoryAnswerDistribution,
   type CategoryRow,
+  type DryRunResult,
   type Me,
   type Overview,
   type PageResponse,
@@ -55,6 +58,54 @@ export function useUser(id: number | null): UseQueryResult<UserDetail> {
     queryFn: () => api.getUser(id as number),
     enabled: id !== null,
     retry: false,
+  });
+}
+
+export function useBroadcasts(page: number, size: number): UseQueryResult<PageResponse<BroadcastSummary>> {
+  return useQuery({
+    queryKey: ["broadcasts", page, size],
+    queryFn: () => api.listBroadcasts(page, size),
+    placeholderData: keepPreviousData,
+    // Keep the history fresh while any broadcast is mid-flight so counters tick.
+    refetchInterval: (query) =>
+      (query.state.data?.content ?? []).some((b) => b.status === "RUNNING") ? 1500 : false,
+  });
+}
+
+export function useBroadcast(id: number | null): UseQueryResult<BroadcastSummary> {
+  return useQuery({
+    queryKey: ["broadcast", id],
+    queryFn: () => api.getBroadcast(id as number),
+    enabled: id !== null,
+    refetchInterval: (query) => (query.state.data?.status === "RUNNING" ? 1500 : false),
+  });
+}
+
+export function useBroadcastTest(): UseMutationResult<BroadcastSummary, Error, BroadcastMessage> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (message) => api.broadcastTest(message),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["broadcasts"] }),
+  });
+}
+
+export function useBroadcastDryRun(): UseMutationResult<DryRunResult, Error, { segment: string; language?: string; message: BroadcastMessage }> {
+  return useMutation({ mutationFn: ({ segment, language, message }) => api.broadcastDryRun(segment, language, message) });
+}
+
+export function useBroadcastStart(): UseMutationResult<void, Error, { id: number; token: string }> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, token }) => api.broadcastStart(id, token),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["broadcasts"] }),
+  });
+}
+
+export function useBroadcastAbort(): UseMutationResult<void, Error, number> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.broadcastAbort(id),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["broadcasts"] }),
   });
 }
 

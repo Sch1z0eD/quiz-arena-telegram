@@ -9,6 +9,7 @@ import { QuestionDetailPage } from "@/pages/QuestionDetailPage";
 import { CategoriesPage } from "@/pages/CategoriesPage";
 import { AuditPage } from "@/pages/AuditPage";
 import { UsersPage } from "@/pages/UsersPage";
+import { BroadcastsPage } from "@/pages/BroadcastsPage";
 
 function RequireAuth({ children }: { children: ReactElement }): ReactElement {
   const me = useMe();
@@ -38,6 +39,7 @@ export default function App(): ReactElement {
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/audit" element={<AuditPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/broadcasts" element={<BroadcastsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
