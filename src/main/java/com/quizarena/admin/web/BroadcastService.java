@@ -156,12 +156,13 @@ public class BroadcastService {
                     sent++;
                 } catch (TelegramApiException e) {
                     failed++;
+                    logSendFailure(id, userId, e);
                     if (isBotBlocked(e)) {
                         markBlocked(userId);
                     }
                 } catch (RuntimeException e) {
                     failed++;
-                    log.warn("Broadcast {} send to {} failed", id, userId, e);
+                    logSendFailure(id, userId, e);
                 }
                 if ((sent + failed) % PROGRESS_FLUSH == 0) {
                     broadcasts.updateProgress(id, sent, failed);
@@ -185,8 +186,23 @@ public class BroadcastService {
         }
     }
 
+    private static void logSendFailure(long id, long userId, Exception e) {
+        Integer errorCode = e instanceof TelegramApiRequestException request ? request.getErrorCode() : null;
+        log.warn("Broadcast {} send to {} failed: type={} errorCode={} message={}",
+                id, userId, e.getClass().getSimpleName(), errorCode, e.getMessage());
+    }
+
+    // getErrorCode() is nullable and not populated on every error path, so fall back to the textual marker
+    // Telegram returns for a stopped bot ("Forbidden: bot was blocked by the user").
     private static boolean isBotBlocked(TelegramApiException e) {
-        return e instanceof TelegramApiRequestException request && request.getErrorCode() == 403;
+        if (e instanceof TelegramApiRequestException request) {
+            Integer code = request.getErrorCode();
+            if (code != null && code == 403) {
+                return true;
+            }
+        }
+        String message = e.getMessage();
+        return message != null && (message.contains("Forbidden") || message.contains("blocked"));
     }
 
     private Broadcast draft(VerifiedAdmin admin, String segment, String language, BroadcastRequest request,

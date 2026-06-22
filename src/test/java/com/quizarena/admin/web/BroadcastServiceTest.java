@@ -8,9 +8,13 @@ import com.quizarena.repository.BroadcastRepository;
 import com.quizarena.repository.UserRepository;
 import com.quizarena.service.BroadcastSender;
 import com.quizarena.service.RateLimiter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.ApiResponse;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +27,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -86,19 +89,26 @@ class BroadcastServiceTest {
     }
 
     @Test
-    void engineMarksBlockedOn403AndKeepsGoing() throws Exception {
+    void engineMarksBlockedWhenRealClientReports403() throws Exception {
+        TelegramClient telegramClient = mock(TelegramClient.class);
+        BroadcastSender realSender = new BroadcastSender(telegramClient);
+        BroadcastService service =
+                new BroadcastService(broadcasts, users, realSender, rateLimiter, audit, panel, synchronous);
+
         Broadcast b = withId(broadcast("test", null, "RUNNING"), 9L);
         when(broadcasts.save(any())).thenReturn(b);
         when(broadcasts.findById(9L)).thenReturn(Optional.of(b));
-        TelegramApiRequestException blocked = mock(TelegramApiRequestException.class);
-        when(blocked.getErrorCode()).thenReturn(403);
-        doThrow(blocked).when(sender).send(111L, b);
+
+        ApiResponse<?> apiResponse = new ObjectMapper().readValue(
+                "{\"ok\":false,\"error_code\":403,\"description\":\"Forbidden: bot was blocked by the user\"}",
+                ApiResponse.class);
+        TelegramApiRequestException blocked = new TelegramApiRequestException("Error executing sendMessage", apiResponse);
+        when(telegramClient.execute(any(SendMessage.class))).thenThrow(blocked).thenReturn(null);
 
         service.test(ADMIN, request("all", null, "Hi", null, null));
 
         verify(users).markBlocked(111L);
-        verify(sender).send(222L, b); // one failure does not abort the batch
-        verify(broadcasts).finish(9L, "DONE", 1, 1);
+        verify(broadcasts).finish(9L, "DONE", 1, 1); // one failure does not abort the batch
     }
 
     @Test
