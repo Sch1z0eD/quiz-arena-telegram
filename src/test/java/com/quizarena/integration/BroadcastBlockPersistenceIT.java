@@ -50,7 +50,7 @@ class BroadcastBlockPersistenceIT extends AbstractIntegrationTest {
         assertFalse(boolField(blockedUser, "blocked"), "starts unblocked");
 
         BroadcastRepository broadcasts = mock(BroadcastRepository.class);
-        Broadcast broadcast = new Broadcast(1L, 0L, "test", null, "Hi", null, null, null, "RUNNING", 1, null);
+        Broadcast broadcast = new Broadcast(1L, 0L, "test", null, "Hi", null, null, "RUNNING", 1, null);
         ReflectionTestUtils.setField(broadcast, "id", 555L);
         when(broadcasts.save(any())).thenReturn(broadcast);
         when(broadcasts.findById(555L)).thenReturn(Optional.of(broadcast));

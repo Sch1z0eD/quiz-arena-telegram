@@ -1,15 +1,22 @@
 package com.quizarena.service;
 
 import com.quizarena.domain.Broadcast;
-import org.springframework.stereotype.Component;
+import com.quizarena.domain.BroadcastButton;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
+import org.telegram.telegrambots.meta.api.objects.photo.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
+
+import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class BroadcastSender {
 
@@ -39,15 +46,35 @@ public class BroadcastSender {
         }
     }
 
+    // Uploads the image once and returns the Telegram file_id so the broadcast can reuse it for every recipient
+    // instead of re-uploading the bytes per send. The photo lands in the uploader's own chat as a side effect.
+    public String uploadPhoto(long chatId, byte[] bytes, String filename) throws TelegramApiException {
+        Message message = telegramClient.execute(SendPhoto.builder()
+                .chatId(chatId)
+                .photo(new InputFile(new ByteArrayInputStream(bytes), filename))
+                .build());
+        return message.getPhoto().stream()
+                .max(Comparator.comparingInt(PhotoSize::getWidth))
+                .orElseThrow(() -> new IllegalStateException("Telegram returned no photo sizes"))
+                .getFileId();
+    }
+
     private static InlineKeyboardMarkup keyboard(Broadcast broadcast) {
-        if (broadcast.getButtonText() == null || broadcast.getButtonText().isBlank()) {
+        List<List<BroadcastButton>> rows = broadcast.getButtons();
+        if (rows == null || rows.isEmpty()) {
             return null;
         }
-        return InlineKeyboardMarkup.builder()
-                .keyboardRow(new InlineKeyboardRow(InlineKeyboardButton.builder()
-                        .text(broadcast.getButtonText())
-                        .url(broadcast.getButtonUrl())
-                        .build()))
-                .build();
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        for (List<BroadcastButton> row : rows) {
+            if (row == null || row.isEmpty()) {
+                continue;
+            }
+            InlineKeyboardRow keyboardRow = new InlineKeyboardRow();
+            for (BroadcastButton button : row) {
+                keyboardRow.add(InlineKeyboardButton.builder().text(button.text()).url(button.url()).build());
+            }
+            keyboard.add(keyboardRow);
+        }
+        return keyboard.isEmpty() ? null : InlineKeyboardMarkup.builder().keyboard(keyboard).build();
     }
 }

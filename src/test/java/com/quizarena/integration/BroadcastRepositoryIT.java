@@ -58,7 +58,7 @@ class BroadcastRepositoryIT extends AbstractIntegrationTest {
 
     private long save(String segment, String status, String token, int total) {
         Broadcast broadcast = new Broadcast(1L, System.currentTimeMillis(), segment, null, "hi",
-                null, null, null, status, total, token);
+                null, null, status, total, token);
         return broadcasts.save(broadcast).getId();
     }
 }

@@ -6,6 +6,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.List;
 
 @Entity
 @Table(name = "broadcasts")
@@ -33,11 +37,9 @@ public class Broadcast {
     @Column(name = "photo_url")
     private String photoUrl;
 
-    @Column(name = "button_text", length = 64)
-    private String buttonText;
-
-    @Column(name = "button_url")
-    private String buttonUrl;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "buttons")
+    private List<List<BroadcastButton>> buttons;
 
     @Column(nullable = false, length = 16)
     private String status;
@@ -58,15 +60,14 @@ public class Broadcast {
     }
 
     public Broadcast(long adminId, long createdAt, String segment, String language, String text, String photoUrl,
-                     String buttonText, String buttonUrl, String status, int total, String confirmToken) {
+                     List<List<BroadcastButton>> buttons, String status, int total, String confirmToken) {
         this.adminId = adminId;
         this.createdAt = createdAt;
         this.segment = segment;
         this.language = language;
         this.text = text;
         this.photoUrl = photoUrl;
-        this.buttonText = buttonText;
-        this.buttonUrl = buttonUrl;
+        this.buttons = buttons;
         this.status = status;
         this.total = total;
         this.confirmToken = confirmToken;
@@ -100,12 +101,8 @@ public class Broadcast {
         return photoUrl;
     }
 
-    public String getButtonText() {
-        return buttonText;
-    }
-
-    public String getButtonUrl() {
-        return buttonUrl;
+    public List<List<BroadcastButton>> getButtons() {
+        return buttons;
     }
 
     public String getStatus() {

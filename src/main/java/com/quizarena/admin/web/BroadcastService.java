@@ -5,6 +5,7 @@ import com.quizarena.admin.auth.VerifiedAdmin;
 import com.quizarena.admin.config.AdminPanelProperties;
 import com.quizarena.admin.web.BroadcastRequest.Button;
 import com.quizarena.domain.Broadcast;
+import com.quizarena.domain.BroadcastButton;
 import com.quizarena.repository.BroadcastRepository;
 import com.quizarena.repository.UserRepository;
 import com.quizarena.service.BroadcastSender;
@@ -18,9 +19,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,6 +48,11 @@ public class BroadcastService {
     private static final int PROGRESS_FLUSH = 25;
     private static final int MAX_TEXT = 4096;
     private static final int MAX_CAPTION = 1024;
+    private static final int MAX_BUTTON_ROWS = 10;
+    private static final int MAX_BUTTONS_PER_ROW = 8;
+    private static final int MAX_BUTTON_TEXT = 64;
+    private static final long MAX_PHOTO_BYTES = 5L * 1024 * 1024;
+    private static final Set<String> PHOTO_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final BroadcastRepository broadcasts;
     private final UserRepository users;
@@ -93,7 +101,7 @@ public class BroadcastService {
         validateContent(request);
         List<Long> recipients = panel.admins();
         Broadcast broadcast = broadcasts.save(new Broadcast(admin.id(), System.currentTimeMillis(), SEGMENT_TEST, null,
-                request.text().trim(), trimToNull(request.photoUrl()), buttonText(request), buttonUrl(request),
+                request.text().trim(), trimToNull(request.photoUrl()), buttons(request),
                 RUNNING, recipients.size(), null));
         audit.record(admin, "broadcast.started", String.valueOf(broadcast.getId()), "segment=test total=" + recipients.size());
         launch(broadcast.getId(), recipients);
@@ -129,6 +137,30 @@ public class BroadcastService {
 
     public Optional<BroadcastSummary> status(long id) {
         return broadcasts.findById(id).map(BroadcastService::toSummary);
+    }
+
+    public PhotoUploadResponse uploadPhoto(VerifiedAdmin admin, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("file is required");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !PHOTO_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("file must be a JPEG, PNG or WebP image");
+        }
+        if (file.getSize() > MAX_PHOTO_BYTES) {
+            throw new IllegalArgumentException("image exceeds 5 MB");
+        }
+        String fileId;
+        try {
+            fileId = sender.uploadPhoto(admin.id(), file.getBytes(), filename(file));
+        } catch (IOException e) {
+            throw new IllegalArgumentException("could not read the uploaded file");
+        } catch (TelegramApiException e) {
+            log.warn("Broadcast photo upload to admin chat {} failed", admin.id(), e);
+            throw new IllegalArgumentException("could not upload to Telegram - open the bot, press Start, then retry");
+        }
+        audit.record(admin, "broadcast.photo_uploaded", fileId, contentType + " " + file.getSize() + "B");
+        return new PhotoUploadResponse(fileId);
     }
 
     private void launch(long id, List<Long> recipients) {
@@ -208,7 +240,7 @@ public class BroadcastService {
     private Broadcast draft(VerifiedAdmin admin, String segment, String language, BroadcastRequest request,
                             String token, int total) {
         return new Broadcast(admin.id(), System.currentTimeMillis(), segment, language, request.text().trim(),
-                trimToNull(request.photoUrl()), buttonText(request), buttonUrl(request), DRAFT, total, token);
+                trimToNull(request.photoUrl()), buttons(request), DRAFT, total, token);
     }
 
     private static BroadcastSummary toSummary(Broadcast b) {
@@ -232,26 +264,59 @@ public class BroadcastService {
         if (request.text().trim().length() > max) {
             throw new IllegalArgumentException("text exceeds " + max + " characters");
         }
-        if (hasPhoto && !isHttpUrl(request.photoUrl().trim())) {
-            throw new IllegalArgumentException("photoUrl must be an http(s) URL");
-        }
-        Button button = request.button();
-        if (button != null) {
-            if (button.text() == null || button.text().isBlank()) {
-                throw new IllegalArgumentException("button text is required");
+        if (hasPhoto) {
+            String photo = request.photoUrl().trim();
+            // A photo can be an http(s) URL or an already-uploaded Telegram file_id (an opaque token, no scheme).
+            if (photo.contains("://") && !isHttpUrl(photo)) {
+                throw new IllegalArgumentException("photoUrl must be an http(s) URL");
             }
-            if (button.url() == null || !isHttpUrl(button.url().trim())) {
-                throw new IllegalArgumentException("button url must be an http(s) URL");
+        }
+        validateButtons(request.buttons());
+    }
+
+    private static void validateButtons(List<List<Button>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return;
+        }
+        if (rows.size() > MAX_BUTTON_ROWS) {
+            throw new IllegalArgumentException("too many button rows (max " + MAX_BUTTON_ROWS + ")");
+        }
+        for (List<Button> row : rows) {
+            if (row == null || row.isEmpty()) {
+                throw new IllegalArgumentException("button rows must not be empty");
+            }
+            if (row.size() > MAX_BUTTONS_PER_ROW) {
+                throw new IllegalArgumentException("too many buttons in a row (max " + MAX_BUTTONS_PER_ROW + ")");
+            }
+            for (Button button : row) {
+                if (button == null || button.text() == null || button.text().isBlank()) {
+                    throw new IllegalArgumentException("button text is required");
+                }
+                if (button.text().trim().length() > MAX_BUTTON_TEXT) {
+                    throw new IllegalArgumentException("button text exceeds " + MAX_BUTTON_TEXT + " characters");
+                }
+                if (button.url() == null || !isHttpUrl(button.url().trim())) {
+                    throw new IllegalArgumentException("button url must be an http(s) URL");
+                }
             }
         }
     }
 
-    private static String buttonText(BroadcastRequest request) {
-        return request.button() == null ? null : request.button().text().trim();
+    private static List<List<BroadcastButton>> buttons(BroadcastRequest request) {
+        List<List<Button>> rows = request.buttons();
+        if (rows == null || rows.isEmpty()) {
+            return null;
+        }
+        return rows.stream()
+                .map(row -> row.stream()
+                        .map(button -> new BroadcastButton(button.text().trim(), button.url().trim()))
+                        .toList())
+                .toList();
     }
 
-    private static String buttonUrl(BroadcastRequest request) {
-        return request.button() == null ? null : request.button().url().trim();
+    private static String filename(MultipartFile file) {
+        String name = file.getOriginalFilename();
+        return name == null || name.isBlank() ? "photo" : name;
     }
 
     private static String trimToNull(String value) {

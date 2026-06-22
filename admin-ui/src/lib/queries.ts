@@ -18,6 +18,7 @@ import {
   type Me,
   type Overview,
   type PageResponse,
+  type PhotoUpload,
   type QuestionDetail,
   type QuestionInput,
   type QuestionQuery,
@@ -107,6 +108,10 @@ export function useBroadcastAbort(): UseMutationResult<void, Error, number> {
     mutationFn: (id) => api.broadcastAbort(id),
     onSuccess: () => client.invalidateQueries({ queryKey: ["broadcasts"] }),
   });
+}
+
+export function useBroadcastPhotoUpload(): UseMutationResult<PhotoUpload, Error, File> {
+  return useMutation({ mutationFn: (file) => api.uploadBroadcastPhoto(file) });
 }
 
 export function useSetUserBanned(): UseMutationResult<void, Error, { id: number; banned: boolean }> {

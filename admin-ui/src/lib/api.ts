@@ -107,7 +107,7 @@ export interface BroadcastButton {
 export interface BroadcastMessage {
   text: string;
   photoUrl?: string;
-  button?: BroadcastButton;
+  buttons?: BroadcastButton[][];
 }
 
 export interface BroadcastSummary {
@@ -126,6 +126,10 @@ export interface DryRunResult {
   id: number;
   total: number;
   token: string;
+}
+
+export interface PhotoUpload {
+  fileId: string;
 }
 
 export interface QuestionStats {
@@ -339,6 +343,21 @@ export const api = {
     }),
   broadcastAbort: (id: number): Promise<void> =>
     request<void>(`/broadcasts/${id}/abort`, { method: "POST" }),
+  uploadBroadcastPhoto: async (file: File): Promise<PhotoUpload> => {
+    const form = new FormData();
+    form.append("file", file);
+    // No Content-Type header: the browser sets the multipart boundary. CSRF still travels in the header.
+    const response = await fetch(`${API_BASE}/api/admin/broadcasts/photo`, {
+      method: "POST",
+      headers: csrfHeader(),
+      body: form,
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new ApiError(response.status, await errorMessage(response, "POST", "/broadcasts/photo"));
+    }
+    return (await response.json()) as PhotoUpload;
+  },
   listBroadcasts: (page: number, size: number): Promise<PageResponse<BroadcastSummary>> =>
     request<PageResponse<BroadcastSummary>>(`/broadcasts?page=${page}&size=${size}`),
   getBroadcast: (id: number): Promise<BroadcastSummary> => request<BroadcastSummary>(`/broadcasts/${id}`),

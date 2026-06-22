@@ -10,12 +10,14 @@ import com.quizarena.service.BroadcastSender;
 import com.quizarena.service.RateLimiter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.ApiResponse;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -70,8 +72,45 @@ class BroadcastServiceTest {
 
     @Test
     void dryRunRejectsBadButtonUrl() {
-        BroadcastRequest.Button button = new BroadcastRequest.Button("Open", "ftp://x");
-        assertThrows(IllegalArgumentException.class, () -> service.dryRun(ADMIN, request("all", null, "hi", null, button)));
+        List<List<BroadcastRequest.Button>> buttons = List.of(List.of(new BroadcastRequest.Button("Open", "ftp://x")));
+        assertThrows(IllegalArgumentException.class, () -> service.dryRun(ADMIN, request("all", null, "hi", null, buttons)));
+    }
+
+    @Test
+    void dryRunRejectsButtonLimitsBlanksAndEmptyRows() {
+        BroadcastRequest.Button ok = new BroadcastRequest.Button("B", "https://b");
+        assertThrows(IllegalArgumentException.class, () ->
+                service.dryRun(ADMIN, request("all", null, "hi", null, Collections.nCopies(11, List.of(ok)))));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.dryRun(ADMIN, request("all", null, "hi", null, List.of(Collections.nCopies(9, ok)))));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.dryRun(ADMIN, request("all", null, "hi", null, List.of(List.of(new BroadcastRequest.Button("  ", "https://b"))))));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.dryRun(ADMIN, request("all", null, "hi", null, List.of(List.<BroadcastRequest.Button>of()))));
+    }
+
+    @Test
+    void uploadPhotoRejectsNonImageAndOversized() throws Exception {
+        MockMultipartFile notImage = new MockMultipartFile("file", "x.txt", "text/plain", new byte[]{1, 2, 3});
+        assertThrows(IllegalArgumentException.class, () -> service.uploadPhoto(ADMIN, notImage));
+
+        MockMultipartFile oversized = new MockMultipartFile("file", "big.jpg", "image/jpeg", new byte[6 * 1024 * 1024]);
+        assertThrows(IllegalArgumentException.class, () -> service.uploadPhoto(ADMIN, oversized));
+
+        verify(sender, never()).uploadPhoto(anyLong(), any(), any());
+    }
+
+    @Test
+    void dryRunAcceptsMultipleButtonRows() {
+        when(users.countRecipients("")).thenReturn(5L);
+        when(broadcasts.save(any())).thenAnswer(inv -> withId(inv.getArgument(0), 3L));
+        List<List<BroadcastRequest.Button>> rows = List.of(
+                List.of(new BroadcastRequest.Button("A", "https://a"), new BroadcastRequest.Button("B", "https://b")),
+                List.of(new BroadcastRequest.Button("C", "https://c")));
+
+        DryRunResponse response = service.dryRun(ADMIN, request("all", null, "hi", null, rows));
+
+        assertEquals(3L, response.id());
     }
 
     @Test
@@ -158,12 +197,12 @@ class BroadcastServiceTest {
     }
 
     private static BroadcastRequest request(String segment, String language, String text, String photoUrl,
-                                            BroadcastRequest.Button button) {
-        return new BroadcastRequest(segment, language, text, photoUrl, button);
+                                            List<List<BroadcastRequest.Button>> buttons) {
+        return new BroadcastRequest(segment, language, text, photoUrl, buttons);
     }
 
     private static Broadcast broadcast(String segment, String language, String status) {
-        return new Broadcast(1L, 0L, segment, language, "Hi", null, null, null, status, 0, null);
+        return new Broadcast(1L, 0L, segment, language, "Hi", null, null, status, 0, null);
     }
 
     private static Broadcast withId(Broadcast broadcast, long id) {

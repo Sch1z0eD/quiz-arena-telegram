@@ -1,9 +1,11 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from "react";
+import { X } from "lucide-react";
 import type { BroadcastMessage } from "@/lib/api";
 import {
   useBroadcast,
   useBroadcastAbort,
   useBroadcastDryRun,
+  useBroadcastPhotoUpload,
   useBroadcasts,
   useBroadcastStart,
   useBroadcastTest,
@@ -17,9 +19,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BroadcastPreview, type PreviewButton } from "@/components/BroadcastPreview";
 
 const LANGUAGES = ["ru", "en"];
 const PAGE_SIZE = 10;
+const CAPTION_LIMIT = 1024;
+const TEXT_LIMIT = 4096;
+const MAX_BUTTON_ROWS = 10;
+const MAX_BUTTONS_PER_ROW = 8;
+const MAX_BUTTON_TEXT = 64;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+interface ButtonDraft {
+  text: string;
+  url: string;
+}
+
+interface UploadedPhoto {
+  name: string;
+  objectUrl: string;
+  fileId: string;
+}
 
 function isHttp(url: string): boolean {
   return /^https?:\/\//.test(url);
@@ -31,18 +52,21 @@ function formatTs(ms: number): string {
 
 export function BroadcastsPage(): ReactElement {
   const [text, setText] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [buttonText, setButtonText] = useState("");
-  const [buttonUrl, setButtonUrl] = useState("");
+  const [photoUrlInput, setPhotoUrlInput] = useState("");
+  const [uploadedPhoto, setUploadedPhoto] = useState<UploadedPhoto | null>(null);
+  const [photoError, setPhotoError] = useState("");
+  const [buttons, setButtons] = useState<ButtonDraft[][]>([]);
   const [segment, setSegment] = useState("all");
   const [language, setLanguage] = useState("ru");
   const [dryRun, setDryRun] = useState<{ id: number; total: number; token: string } | null>(null);
   const [typedCount, setTypedCount] = useState("");
   const [activeId, setActiveId] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const test = useBroadcastTest();
   const dry = useBroadcastDryRun();
   const start = useBroadcastStart();
+  const upload = useBroadcastPhotoUpload();
   const broadcasts = useBroadcasts(0, PAGE_SIZE);
 
   // Any edit to the message or segment invalidates a prior dry-run, so full-send re-locks until re-run.
@@ -51,23 +75,46 @@ export function BroadcastsPage(): ReactElement {
     setTypedCount("");
   }
 
-  const message: BroadcastMessage = useMemo(() => ({
-    text: text.trim(),
-    photoUrl: photoUrl.trim() || undefined,
-    button: buttonText.trim() && buttonUrl.trim() ? { text: buttonText.trim(), url: buttonUrl.trim() } : undefined,
-  }), [text, photoUrl, buttonText, buttonUrl]);
+  // The value we SEND is a file_id (after upload) or the typed URL; the value we DISPLAY in the preview is the
+  // local object URL (a file_id is not a renderable image source) or the typed URL.
+  const photoValue = uploadedPhoto ? uploadedPhoto.fileId : photoUrlInput.trim();
+  const photoSrc = uploadedPhoto ? uploadedPhoto.objectUrl : photoUrlInput.trim() || undefined;
+
+  const message: BroadcastMessage = useMemo(() => {
+    const rows = buttons
+      .map((row) => row.map((b) => ({ text: b.text.trim(), url: b.url.trim() })).filter((b) => b.text || b.url))
+      .filter((row) => row.length > 0);
+    return {
+      text: text.trim(),
+      photoUrl: photoValue || undefined,
+      buttons: rows.length > 0 ? rows : undefined,
+    };
+  }, [text, photoValue, buttons]);
+
+  const maxLen = message.photoUrl ? CAPTION_LIMIT : TEXT_LIMIT;
+  const previewButtons: PreviewButton[][] = useMemo(
+    () =>
+      buttons
+        .map((row) => row.filter((b) => b.text.trim()).map((b) => ({ text: b.text.trim(), url: b.url.trim() })))
+        .filter((row) => row.length > 0),
+    [buttons],
+  );
 
   const errors = useMemo(() => {
     const list: string[] = [];
     const hasPhoto = !!message.photoUrl;
-    const maxLen = hasPhoto ? 1024 : 4096;
+    const maxLen = hasPhoto ? CAPTION_LIMIT : TEXT_LIMIT;
     if (!message.text) list.push("Text is required.");
     if (message.text.length > maxLen) list.push(`Text exceeds ${maxLen} characters (${hasPhoto ? "with photo" : "no photo"}).`);
-    if (hasPhoto && !isHttp(message.photoUrl as string)) list.push("Photo URL must be http(s).");
-    if (Boolean(buttonText.trim()) !== Boolean(buttonUrl.trim())) list.push("A button needs both text and URL.");
-    if (message.button && !isHttp(message.button.url)) list.push("Button URL must be http(s).");
+    if (hasPhoto && !uploadedPhoto && !isHttp(message.photoUrl as string)) list.push("Photo URL must be http(s).");
+    if (buttons.length > MAX_BUTTON_ROWS) list.push(`Too many button rows (max ${MAX_BUTTON_ROWS}).`);
+    if (buttons.some((row) => row.length > MAX_BUTTONS_PER_ROW)) list.push(`Too many buttons in a row (max ${MAX_BUTTONS_PER_ROW}).`);
+    const flat = buttons.flat();
+    if (flat.some((b) => Boolean(b.text.trim()) !== Boolean(b.url.trim()))) list.push("Each button needs both text and URL.");
+    if (flat.some((b) => b.url.trim() && !isHttp(b.url.trim()))) list.push("Button URLs must be http(s).");
+    if (flat.some((b) => b.text.trim().length > MAX_BUTTON_TEXT)) list.push(`Button text exceeds ${MAX_BUTTON_TEXT} characters.`);
     return list;
-  }, [message, buttonText, buttonUrl]);
+  }, [message, buttons, uploadedPhoto]);
 
   const messageValid = errors.length === 0;
   const segmentValid = segment === "all" || (segment === "by-language" && language.length > 0);
@@ -92,6 +139,29 @@ export function BroadcastsPage(): ReactElement {
     start.mutate({ id, token: dryRun.token }, { onSuccess: () => { setActiveId(id); resetConfirmation(); } });
   }
 
+  function onPickFile(event: ChangeEvent<HTMLInputElement>): void {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // let the same file be re-picked after a clear
+    if (!file) return;
+    setPhotoError("");
+    if (!PHOTO_TYPES.includes(file.type)) { setPhotoError("Use a JPEG, PNG or WebP image."); return; }
+    if (file.size > MAX_PHOTO_BYTES) { setPhotoError("Image exceeds 5 MB."); return; }
+    upload.mutate(file, {
+      onSuccess: (result) => {
+        setUploadedPhoto({ name: file.name, objectUrl: URL.createObjectURL(file), fileId: result.fileId });
+        resetConfirmation();
+      },
+      onError: (error) => setPhotoError(error.message),
+    });
+  }
+
+  function clearPhoto(): void {
+    if (uploadedPhoto) URL.revokeObjectURL(uploadedPhoto.objectUrl);
+    setUploadedPhoto(null);
+    setPhotoError("");
+    resetConfirmation();
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Broadcasts</h1>
@@ -101,31 +171,52 @@ export function BroadcastsPage(): ReactElement {
           <CardTitle className="text-base">Message</CardTitle>
           <CardDescription>HTML is allowed. Send a test to yourself to see the real rendering before any blast.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Field label="Text">
-            <Textarea value={text} onChange={(e) => { setText(e.target.value); resetConfirmation(); }} rows={5} />
-          </Field>
-          <Field label="Photo URL (optional)">
-            <Input value={photoUrl} placeholder="https://…" onChange={(e) => { setPhotoUrl(e.target.value); resetConfirmation(); }} />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Button text (optional)">
-              <Input value={buttonText} onChange={(e) => { setButtonText(e.target.value); resetConfirmation(); }} />
-            </Field>
-            <Field label="Button URL (optional)">
-              <Input value={buttonUrl} placeholder="https://…" onChange={(e) => { setButtonUrl(e.target.value); resetConfirmation(); }} />
-            </Field>
-          </div>
-          {errors.length > 0 && text.length > 0 ? (
-            <ul className="text-sm text-destructive">{errors.map((e) => <li key={e}>{e}</li>)}</ul>
-          ) : null}
+        <CardContent>
+          <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className="space-y-4">
+              <Field label="Text">
+                <Textarea value={text} onChange={(e) => { setText(e.target.value); resetConfirmation(); }} rows={5} />
+              </Field>
+              <Field label="Photo (optional)">
+                {uploadedPhoto ? (
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-sm">
+                    <span className="truncate text-muted-foreground">Uploaded: {uploadedPhoto.name}</span>
+                    <Button type="button" variant="ghost" size="icon" aria-label="Remove photo" onClick={clearPhoto}>
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Input value={photoUrlInput} placeholder="https://… image URL" onChange={(e) => { setPhotoUrlInput(e.target.value); resetConfirmation(); }} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onPickFile} />
+                      <Button type="button" variant="outline" size="sm" disabled={upload.isPending} onClick={() => fileInputRef.current?.click()}>
+                        {upload.isPending ? "Uploading…" : "Upload from computer"}
+                      </Button>
+                      {photoError ? <span className="text-sm text-destructive">{photoError}</span> : null}
+                    </div>
+                  </div>
+                )}
+              </Field>
+              <ButtonsEditor value={buttons} onChange={(next) => { setButtons(next); resetConfirmation(); }} />
+              {errors.length > 0 && text.length > 0 ? (
+                <ul className="text-sm text-destructive">{errors.map((e) => <li key={e}>{e}</li>)}</ul>
+              ) : null}
 
-          <div className="flex flex-wrap items-center gap-3 border-t pt-4">
-            <Button onClick={sendTest} disabled={!messageValid || test.isPending}>
-              {test.isPending ? "Sending…" : "Send test to me"}
-            </Button>
-            {test.isSuccess ? <span className="text-sm text-muted-foreground">Test sent — check Telegram.</span> : null}
-            {test.isError ? <span className="text-sm text-destructive">{test.error.message}</span> : null}
+              <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+                <Button onClick={sendTest} disabled={!messageValid || test.isPending}>
+                  {test.isPending ? "Sending…" : "Send test to me"}
+                </Button>
+                {test.isSuccess ? <span className="text-sm text-muted-foreground">Test sent — check Telegram.</span> : null}
+                {test.isError ? <span className="text-sm text-destructive">{test.error.message}</span> : null}
+              </div>
+            </div>
+
+            <div className="lg:sticky lg:top-6 lg:self-start">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Preview</p>
+              <BroadcastPreview text={text} photoSrc={photoSrc} buttons={previewButtons} maxLen={maxLen} />
+              <p className="mt-2 text-xs text-muted-foreground">Approximate. Send a test for the authoritative rendering.</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -270,6 +361,41 @@ function LivePanel({ id }: { id: number }): ReactElement {
 function StatusBadge({ status }: { status: string }): ReactElement {
   const variant = status === "DONE" ? "accent" : status === "RUNNING" ? "default" : "outline";
   return <Badge variant={variant}>{status}</Badge>;
+}
+
+function ButtonsEditor({ value, onChange }: { value: ButtonDraft[][]; onChange: (next: ButtonDraft[][]) => void }): ReactElement {
+  const setField = (r: number, c: number, field: keyof ButtonDraft, v: string): void =>
+    onChange(value.map((row, ri) => (ri === r ? row.map((b, ci) => (ci === c ? { ...b, [field]: v } : b)) : row)));
+  const addButton = (r: number): void =>
+    onChange(value.map((row, ri) => (ri === r ? [...row, { text: "", url: "" }] : row)));
+  const removeButton = (r: number, c: number): void =>
+    onChange(value.map((row, ri) => (ri === r ? row.filter((_, ci) => ci !== c) : row)).filter((row) => row.length > 0));
+  const addRow = (): void => onChange([...value, [{ text: "", url: "" }]]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>Buttons (optional)</Label>
+      {value.map((row, r) => (
+        <div key={r} className="space-y-2 rounded-md border border-border/60 p-2">
+          {row.map((button, c) => (
+            <div key={c} className="flex items-center gap-2">
+              <Input className="flex-1" placeholder="Label" value={button.text} onChange={(e) => setField(r, c, "text", e.target.value)} />
+              <Input className="flex-1" placeholder="https://…" value={button.url} onChange={(e) => setField(r, c, "url", e.target.value)} />
+              <Button type="button" variant="ghost" size="icon" aria-label="Remove button" onClick={() => removeButton(r, c)}>
+                <X className="size-4" />
+              </Button>
+            </div>
+          ))}
+          {row.length < MAX_BUTTONS_PER_ROW ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => addButton(r)}>Add button</Button>
+          ) : null}
+        </div>
+      ))}
+      {value.length < MAX_BUTTON_ROWS ? (
+        <Button type="button" variant="outline" size="sm" onClick={addRow}>Add row</Button>
+      ) : null}
+    </div>
+  );
 }
 
 function Field({ label, children }: { label: string; children: ReactElement }): ReactElement {

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice(basePackages = "com.quizarena.admin")
 @ConditionalOnProperty(prefix = "admin.panel", name = "enabled", havingValue = "true")
@@ -26,5 +27,11 @@ public class AdminExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorBody handleValidation(IllegalArgumentException exception) {
         return new ErrorBody(exception.getMessage());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorBody handleUploadTooLarge(MaxUploadSizeExceededException exception) {
+        return new ErrorBody("uploaded file is too large");
     }
 }

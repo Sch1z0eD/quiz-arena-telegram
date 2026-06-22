@@ -3,6 +3,7 @@ package com.quizarena.admin.web;
 import com.quizarena.admin.auth.VerifiedAdmin;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -36,6 +38,12 @@ public class AdminBroadcastController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public BroadcastSummary test(@AuthenticationPrincipal VerifiedAdmin admin, @RequestBody BroadcastRequest request) {
         return service.test(admin, request);
+    }
+
+    @PostMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PhotoUploadResponse uploadPhoto(@AuthenticationPrincipal VerifiedAdmin admin,
+                                           @RequestParam("file") MultipartFile file) {
+        return service.uploadPhoto(admin, file);
     }
 
     @PostMapping("/{id}/start")
