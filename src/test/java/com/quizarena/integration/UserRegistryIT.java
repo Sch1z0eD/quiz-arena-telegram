@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.api.objects.User;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -76,6 +77,27 @@ class UserRegistryIT extends AbstractIntegrationTest {
         assertEquals("alice2", stringField(id, "username"));
         assertFalse(boolField(id, "blocked"), "writing means the user has not blocked the bot");
         assertTrue(boolField(id, "banned"), "touch must not lift a ban");
+    }
+
+    @Test
+    void recipientResolutionExcludesBannedAndBlocked() {
+        long active = 7600001L;
+        long bannedUser = 7600002L;
+        long blockedUser = 7600003L;
+        userService.touch(human(active, "Act", "act"));
+        userService.touch(human(bannedUser, "Ban", "ban"));
+        userService.touch(human(blockedUser, "Blk", "blk"));
+        users.setBanned(bannedUser, true);
+        users.markBlocked(blockedUser);
+
+        List<Long> all = users.findRecipientIds("");
+        assertTrue(all.contains(active));
+        assertFalse(all.contains(bannedUser), "banned users are not broadcast recipients");
+        assertFalse(all.contains(blockedUser), "blocked users are not broadcast recipients");
+
+        long before = users.countRecipients("");
+        users.markBlocked(active);
+        assertEquals(before - 1, users.countRecipients(""), "marking blocked drops the user from the recipient count");
     }
 
     @Test

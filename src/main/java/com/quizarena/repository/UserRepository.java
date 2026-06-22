@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
@@ -96,4 +97,26 @@ public interface UserRepository extends JpaRepository<User, Long>, UserRepositor
     @Transactional
     @Query("UPDATE User u SET u.banned = :banned WHERE u.id = :id")
     int setBanned(@Param("id") long id, @Param("banned") boolean banned);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.blocked = true WHERE u.id = :id")
+    void markBlocked(@Param("id") long id);
+
+    // Broadcast recipients: registry minus banned and blocked; language '' means all (language lives in
+    // user_settings, so we LEFT JOIN it). Resolved live at start, not snapshotted at dry-run.
+    @Query(value = """
+            SELECT COUNT(*) FROM users u
+            LEFT JOIN user_settings s ON s.user_id = u.id
+            WHERE u.banned = FALSE AND u.blocked = FALSE AND (:language = '' OR s.language = :language)
+            """, nativeQuery = true)
+    long countRecipients(@Param("language") String language);
+
+    @Query(value = """
+            SELECT u.id FROM users u
+            LEFT JOIN user_settings s ON s.user_id = u.id
+            WHERE u.banned = FALSE AND u.blocked = FALSE AND (:language = '' OR s.language = :language)
+            ORDER BY u.id
+            """, nativeQuery = true)
+    List<Long> findRecipientIds(@Param("language") String language);
 }

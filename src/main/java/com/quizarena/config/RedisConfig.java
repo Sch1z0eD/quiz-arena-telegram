@@ -27,4 +27,9 @@ public class RedisConfig {
     public RedisScript<Long> cancelSearchScript() {
         return RedisScript.of(new ClassPathResource("redis/cancel_search.lua"), Long.class);
     }
+
+    @Bean
+    public RedisScript<Long> tokenBucketScript() {
+        return RedisScript.of(new ClassPathResource("redis/token_bucket.lua"), Long.class);
+    }
 }
