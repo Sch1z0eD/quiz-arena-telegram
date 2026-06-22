@@ -97,7 +97,8 @@ export function UsersPage(): ReactElement {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span>{user.name ?? "—"}</span>
-                        {user.banned ? <Badge variant="outline">Banned</Badge> : null}
+                        {user.banned ? <Badge variant="destructive">Banned</Badge> : null}
+                        {user.blocked ? <Badge variant="default">Blocked</Badge> : null}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.username ? `@${user.username}` : "—"}</TableCell>
@@ -149,7 +150,8 @@ function UserDetailPanel({ id }: { id: number }): ReactElement {
       <SheetHeader>
         <div className="flex items-center gap-2">
           <SheetTitle>{u.name ?? `User ${u.id}`}</SheetTitle>
-          {u.banned ? <Badge variant="outline">Banned</Badge> : null}
+          {u.banned ? <Badge variant="destructive">Banned</Badge> : null}
+          {u.blocked ? <Badge variant="default">Blocked</Badge> : null}
         </div>
         <SheetDescription>
           {u.username ? `@${u.username} · ` : ""}id {u.id}{u.language ? ` · ${u.language.toUpperCase()}` : ""}
