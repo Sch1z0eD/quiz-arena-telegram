@@ -18,17 +18,19 @@ public class UserService {
     }
 
     /**
-     * Registers or refreshes the user behind an incoming update. Best-effort: the registry must never break
-     * gameplay, so any failure is logged and swallowed. Skips bots and updates without a from-user.
+     * Registers or refreshes the user behind an incoming update and returns whether they are banned.
+     * Best-effort and fail-open: any failure (or no from-user / a bot) yields false so a DB hiccup never
+     * blocks everyone - a banned user merely slips one update through and is caught on the next.
      */
-    public void touch(User from) {
+    public boolean touch(User from) {
         if (from == null || Boolean.TRUE.equals(from.getIsBot())) {
-            return;
+            return false;
         }
         try {
-            users.touch(from.getId(), from.getFirstName(), from.getUserName(), System.currentTimeMillis());
+            return users.touch(from.getId(), from.getFirstName(), from.getUserName(), System.currentTimeMillis());
         } catch (RuntimeException e) {
             log.warn("Failed to touch user {}", from.getId(), e);
+            return false;
         }
     }
 }

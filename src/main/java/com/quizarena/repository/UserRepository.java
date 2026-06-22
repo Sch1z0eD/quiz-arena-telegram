@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
 
     // List: aggregate answers across ALL users first, then LEFT JOIN so contacted-but-never-played users
     // (games = 0) still appear. "games" counts solo/group quiz games only; duels share the game_id
@@ -89,20 +89,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Modifying
     @Transactional
-    @Query(value = """
-            INSERT INTO users (id, name, username, first_seen, last_seen, blocked)
-            VALUES (:id, :name, :username, :now, :now, FALSE)
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                username = EXCLUDED.username,
-                last_seen = EXCLUDED.last_seen,
-                blocked = FALSE
-            """, nativeQuery = true)
-    void touch(@Param("id") long id, @Param("name") String name, @Param("username") String username,
-               @Param("now") long now);
+    @Query("UPDATE User u SET u.name = :name WHERE u.id = :id AND u.name IS NULL")
+    int backfillNameIfMissing(@Param("id") long id, @Param("name") String name);
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.name = :name WHERE u.id = :id AND u.name IS NULL")
-    int backfillNameIfMissing(@Param("id") long id, @Param("name") String name);
+    @Query("UPDATE User u SET u.banned = :banned WHERE u.id = :id")
+    int setBanned(@Param("id") long id, @Param("banned") boolean banned);
 }

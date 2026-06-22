@@ -4,7 +4,8 @@ import com.quizarena.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.User;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -20,9 +21,16 @@ class UserServiceTest {
     private final UserService service = new UserService(users);
 
     @Test
-    void touchRegistersHuman() {
-        service.touch(human(7L, "Alice", "al"));
+    void touchRegistersHumanAndReturnsBannedFlag() {
+        when(users.touch(eq(7L), eq("Alice"), eq("al"), anyLong())).thenReturn(true);
+        assertTrue(service.touch(human(7L, "Alice", "al")), "touch returns the banned flag from the upsert");
         verify(users).touch(eq(7L), eq("Alice"), eq("al"), anyLong());
+    }
+
+    @Test
+    void touchReturnsFalseForNonBanned() {
+        when(users.touch(eq(7L), eq("Alice"), eq("al"), anyLong())).thenReturn(false);
+        assertFalse(service.touch(human(7L, "Alice", "al")));
     }
 
     @Test
@@ -40,9 +48,9 @@ class UserServiceTest {
     }
 
     @Test
-    void touchSwallowsRepositoryFailure() {
+    void touchFailsOpenOnRepositoryFailure() {
         doThrow(new RuntimeException("db down")).when(users).touch(anyLong(), anyString(), anyString(), anyLong());
-        assertDoesNotThrow(() -> service.touch(human(7L, "Alice", "al")));
+        assertFalse(service.touch(human(7L, "Alice", "al")), "a DB failure must not block everyone (fail-open)");
     }
 
     private static User human(long id, String firstName, String username) {

@@ -1,5 +1,7 @@
 package com.quizarena.admin.web;
 
+import com.quizarena.admin.audit.AuditService;
+import com.quizarena.admin.auth.VerifiedAdmin;
 import com.quizarena.admin.web.UserDetail.CategoryStat;
 import com.quizarena.admin.web.UserDetail.DuelSummary;
 import com.quizarena.admin.web.UserDetail.RecentGame;
@@ -10,7 +12,10 @@ import com.quizarena.repository.UserRepository.UserRowProjection;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +29,21 @@ public class AdminUserService {
     private final UserRepository users;
     private final AnswerRepository answers;
     private final DuelRepository duels;
+    private final AuditService audit;
 
-    public AdminUserService(UserRepository users, AnswerRepository answers, DuelRepository duels) {
+    public AdminUserService(UserRepository users, AnswerRepository answers, DuelRepository duels, AuditService audit) {
         this.users = users;
         this.answers = answers;
         this.duels = duels;
+        this.audit = audit;
+    }
+
+    @Transactional
+    public void setBanned(VerifiedAdmin admin, long id, boolean banned) {
+        if (users.setBanned(id, banned) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        audit.record(admin, banned ? "user.banned" : "user.unbanned", String.valueOf(id), null);
     }
 
     public PageResponse<UserRow> list(String query, Pageable pageable) {

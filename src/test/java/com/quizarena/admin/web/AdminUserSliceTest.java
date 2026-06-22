@@ -24,7 +24,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -69,6 +72,24 @@ class AdminUserSliceTest {
         mvc.perform(get("/api/admin/users?sort=banned,asc").with(admin())).andExpect(status().isOk());
 
         assertEquals(Sort.by(Sort.Order.desc("lastSeen")), captor.getValue().getSort());
+    }
+
+    @Test
+    void banRequiresAuthentication() throws Exception {
+        mvc.perform(put("/api/admin/users/1/banned").with(csrf())
+                .contentType(APPLICATION_JSON).content("{\"banned\":true}")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void banRequiresCsrf() throws Exception {
+        mvc.perform(put("/api/admin/users/1/banned").with(admin())
+                .contentType(APPLICATION_JSON).content("{\"banned\":true}")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void banSucceedsWithSessionAndCsrf() throws Exception {
+        mvc.perform(put("/api/admin/users/1/banned").with(admin()).with(csrf())
+                .contentType(APPLICATION_JSON).content("{\"banned\":true}")).andExpect(status().isNoContent());
     }
 
     private static RequestPostProcessor admin() {

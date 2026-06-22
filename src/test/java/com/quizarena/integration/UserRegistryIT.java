@@ -79,6 +79,18 @@ class UserRegistryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void touchReflectsBannedStateForEnforcement() {
+        long id = 7500001L;
+        assertFalse(userService.touch(human(id, "Ban Me", "banme")), "a fresh user is not banned");
+
+        users.setBanned(id, true);
+        assertTrue(userService.touch(human(id, "Ban Me", "banme")), "after ban, touch reports banned in the same upsert");
+
+        users.setBanned(id, false);
+        assertFalse(userService.touch(human(id, "Ban Me", "banme")), "after unban, touch reports not banned");
+    }
+
+    @Test
     void nameBackfillFillsOnlyMissingNames() {
         long keep = 7300001L;
         long fill = 7300002L;

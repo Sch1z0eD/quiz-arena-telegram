@@ -1,5 +1,7 @@
 package com.quizarena.admin.web;
 
+import com.quizarena.admin.audit.AuditService;
+import com.quizarena.admin.auth.VerifiedAdmin;
 import com.quizarena.repository.AnswerRepository;
 import com.quizarena.repository.DuelRepository;
 import com.quizarena.repository.UserRepository;
@@ -7,26 +9,56 @@ import com.quizarena.repository.UserRepository.UserRowProjection;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AdminUserServiceTest {
 
+    private static final VerifiedAdmin ADMIN = new VerifiedAdmin(1, "Admin");
+
     private final UserRepository users = mock(UserRepository.class);
     private final AnswerRepository answers = mock(AnswerRepository.class);
     private final DuelRepository duels = mock(DuelRepository.class);
-    private final AdminUserService service = new AdminUserService(users, answers, duels);
+    private final AuditService audit = mock(AuditService.class);
+    private final AdminUserService service = new AdminUserService(users, answers, duels, audit);
+
+    @Test
+    void banRecordsAudit() {
+        when(users.setBanned(5L, true)).thenReturn(1);
+        service.setBanned(ADMIN, 5L, true);
+        verify(audit).record(eq(ADMIN), eq("user.banned"), eq("5"), isNull());
+    }
+
+    @Test
+    void unbanRecordsAudit() {
+        when(users.setBanned(5L, false)).thenReturn(1);
+        service.setBanned(ADMIN, 5L, false);
+        verify(audit).record(eq(ADMIN), eq("user.unbanned"), eq("5"), isNull());
+    }
+
+    @Test
+    void setBannedThrows404AndSkipsAuditWhenUserMissing() {
+        when(users.setBanned(9L, true)).thenReturn(0);
+        assertThrows(ResponseStatusException.class, () -> service.setBanned(ADMIN, 9L, true));
+        verify(audit, never()).record(any(), anyString(), anyString(), any());
+    }
 
     @Test
     void listRoundsAccuracyNotTruncates() {

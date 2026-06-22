@@ -60,7 +60,9 @@ public class QuizArenaBot implements SpringLongPollingBot {
 
     private void dispatch(Update update) {
         try {
-            userService.touch(from(update));
+            if (userService.touch(from(update))) {
+                return; // banned: the contact is registered, but nothing is processed or answered
+            }
             if (update.hasMessage() && update.getMessage().hasText()) {
                 commandHandler.handle(update.getMessage());
             } else if (update.hasCallbackQuery()) {
