@@ -15,14 +15,16 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminController.class)
-@Import(AdminSecurityConfig.class)
+@Import({AdminSecurityConfig.class, SpaStaticConfig.class})
 @TestPropertySource(properties = "admin.panel.enabled=true")
 class AdminSecuritySliceTest {
 
@@ -90,6 +92,23 @@ class AdminSecuritySliceTest {
                 .andExpect(jsonPath("$[0].category").value("science"))
                 .andExpect(jsonPath("$[0].a").value(2))
                 .andExpect(jsonPath("$[0].total").value(4));
+    }
+
+    @Test
+    void staticShellIsPublic() throws Exception {
+        mvc.perform(get("/index.html")).andExpect(status().isOk());
+    }
+
+    @Test
+    void clientRouteFallsBackToIndex() throws Exception {
+        mvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("quizarena-admin-shell")));
+    }
+
+    @Test
+    void missingAssetIsNotFoundNotIndex() throws Exception {
+        mvc.perform(get("/assets/missing-xyz.js")).andExpect(status().isNotFound());
     }
 
     private static RequestPostProcessor admin() {

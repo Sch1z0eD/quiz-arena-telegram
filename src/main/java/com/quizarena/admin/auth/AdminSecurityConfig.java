@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,6 +23,7 @@ import java.time.Clock;
 public class AdminSecurityConfig {
 
     @Bean
+    @Order(1)
     SecurityFilterChain adminSecurityFilterChain(HttpSecurity http, SecurityContextRepository contextRepository)
             throws Exception {
         http
@@ -42,6 +44,19 @@ public class AdminSecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout.disable());
+        return http.build();
+    }
+
+    // Everything outside /api/admin/** (the admin UI shell and its static assets) is public; the API stays
+    // behind chain 1. The /api/** denyAll is a backstop so no API path can ever fall through to permitAll.
+    @Bean
+    @Order(2)
+    SecurityFilterChain staticContentSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/**").denyAll()
+                        .anyRequest().permitAll())
+                .csrf(csrf -> csrf.disable());
         return http.build();
     }
 
